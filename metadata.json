@@ -1,0 +1,6 @@
+{
+  "name": "NourishNet",
+  "description": "Intelligent Surplus Food Recovery & Logistics Coordination Platform featuring smart priority allocation, atomic reservations, QR handoff verification, and real-time recovery outcome analytics.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
