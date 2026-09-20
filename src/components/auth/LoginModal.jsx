@@ -30,24 +30,11 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSuccessMessage, setForgotSuccessMessage] = useState("");
 
+  // Prefill credentials if passed from DemoDrawer
   useEffect(() => {
     if (prefillEmail) setEmail(prefillEmail);
     if (prefillPassword) setPassword(prefillPassword);
   }, [prefillEmail, prefillPassword]);
-
-  // Listen for Ctrl key to toggle Demo Mode drawer when login modal is open
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === "Control" || (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Control")) {
-        if (demoMode && onOpenDemo) {
-          onOpenDemo();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, demoMode, onOpenDemo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

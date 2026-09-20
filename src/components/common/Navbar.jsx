@@ -25,7 +25,7 @@ const Navbar = ({
   activeTab = "dashboard",
   setActiveTab
 }) => {
-  const { currentUser, isAuthenticated, logout, demoMode } = useApp();
+  const { currentUser, isAuthenticated, logout, demoMode, setDemoMode } = useApp();
   const { notifPrefs, saveNotificationPreferences } = useDashboardConfig(currentUser);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isNotifPrefsOpen, setIsNotifPrefsOpen] = useState(false);
@@ -96,16 +96,29 @@ const Navbar = ({
 
           {/* Right Action Bar */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Subtle Demo Indicator if active */}
-            {demoMode && (
+            {/* Demo Indicator / Toggle */}
+            {demoMode ? (
               <button
                 type="button"
                 onClick={onOpenDemo}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#F5EFEB] text-[#C85A32] border border-[#E7DCD5] hover:bg-[#E7DCD5]/70 transition-all cursor-pointer"
-                title="Demo Mode active. Press Ctrl on login page or click here to view demo accounts."
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#F5EFEB] text-[#2C1810] border border-[#E7DCD5] hover:bg-[#E7DCD5]/70 transition-all cursor-pointer"
+                title="Demo Mode is active. Click to view 25 demo accounts or press Ctrl."
               >
-                <span className="w-2 h-2 rounded-full bg-[#C85A32] animate-pulse" />
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
                 <span className="hidden sm:inline">Demo Active (Ctrl)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setDemoMode && setDemoMode(true)}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-lg text-[#8D6E63] hover:text-[#2C1810] hover:bg-[#F5EFEB] transition-all cursor-pointer"
+                title="Enable Demo Mode"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#C85A32]" />
+                <span className="hidden sm:inline">Enable Demo</span>
               </button>
             )}
 

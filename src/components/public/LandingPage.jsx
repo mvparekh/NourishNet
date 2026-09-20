@@ -17,19 +17,6 @@ import { useApp } from "../../context/AppContext";
 const LandingPage = ({ onOpenLogin, onOpenApply, onOpenDemo }) => {
   const { outcomeMetrics, demoMode } = useApp();
 
-  // Listen for Ctrl key to toggle Demo Mode drawer when on landing screen
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Control" || (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Control")) {
-        if (demoMode && onOpenDemo) {
-          onOpenDemo();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [demoMode, onOpenDemo]);
-
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#2C1810] flex flex-col selection:bg-[#C85A32] selection:text-white">
       {/* Hero Section */}

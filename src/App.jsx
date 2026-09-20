@@ -19,22 +19,38 @@ const MainLayout = () => {
   const [isDemoDrawerOpen, setIsDemoDrawerOpen] = useState(false);
   const [prefillCreds, setPrefillCreds] = useState({ email: "", password: "" });
 
+  // Close all modals when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsLoginOpen(false);
+      setIsApplyOpen(false);
+      setIsDemoDrawerOpen(false);
+    }
+  }, [isAuthenticated]);
+
   // Global keyboard listener for Ctrl key to toggle Demo Mode when on login/landing view
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // ONLY trigger on Ctrl key when demoMode is active and user is not in another input-heavy flow
-      if (e.key === "Control" || (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Control")) {
-        if (demoMode) {
-          setIsDemoDrawerOpen((prev) => !prev);
-        }
+      // Disabled if demoMode is false
+      if (!demoMode) return;
+
+      // Only listen on login screen or landing page (unauthenticated)
+      if (isAuthenticated) return;
+
+      // Detect Control key press (Left Ctrl or Right Ctrl)
+      if (e.key === "Control" || e.code === "ControlLeft" || e.code === "ControlRight") {
+        if (e.repeat || e.altKey || e.metaKey) return;
+        setIsDemoDrawerOpen((prev) => !prev);
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [demoMode]);
+  }, [demoMode, isAuthenticated]);
 
   const handleSelectCredentials = (email, password) => {
     setPrefillCreds({ email, password });
+    setIsDemoDrawerOpen(false);
     setIsLoginOpen(true);
   };
 
@@ -90,13 +106,6 @@ const MainLayout = () => {
       {/* Floating Demo Bar (Visible when authenticated and Demo Mode is ON) */}
       {isAuthenticated && <DemoBar />}
 
-      {/* Demo Mode Drawer (25 demo users across all 5 roles) */}
-      <DemoDrawer
-        isOpen={isDemoDrawerOpen}
-        onClose={() => setIsDemoDrawerOpen(false)}
-        onSelectCredentials={handleSelectCredentials}
-      />
-
       {/* Authentication & Onboarding Modals */}
       <LoginModal
         isOpen={isLoginOpen}
@@ -110,6 +119,13 @@ const MainLayout = () => {
       <ApplyToJoinModal
         isOpen={isApplyOpen}
         onClose={() => setIsApplyOpen(false)}
+      />
+
+      {/* Demo Mode Drawer (25 demo users across all 5 roles) */}
+      <DemoDrawer
+        isOpen={isDemoDrawerOpen}
+        onClose={() => setIsDemoDrawerOpen(false)}
+        onSelectCredentials={handleSelectCredentials}
       />
     </div>
   );

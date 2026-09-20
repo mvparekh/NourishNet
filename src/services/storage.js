@@ -1180,7 +1180,7 @@ const StorageService = {
         }
         return {
           ...parsed,
-          demoMode: parsed.demoMode !== void 0 ? parsed.demoMode : false
+          demoMode: parsed.demoMode !== void 0 ? parsed.demoMode : true
         };
       }
     } catch {
@@ -1201,7 +1201,7 @@ const StorageService = {
       consumedNonces: [],
       currentUserId: "",
       // Unauthenticated by default: public entry / login screen
-      demoMode: false
+      demoMode: true
     };
     StorageService.save(initialData);
     return initialData;

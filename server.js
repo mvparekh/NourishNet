@@ -230,14 +230,15 @@ class DatabaseState {
   }
 
   resetToDefault() {
-    // Combine seed base users + 25 Demo Users
-    this.users = [
-      ...SEED_USERS,
-      ...DEMO_USERS,
-    ];
-    this.organizations = [
-      ...SEED_ORGANIZATIONS,
-    ];
+    // Deep clone seed base users + 25 Demo Users and restore clean state
+    this.users = JSON.parse(JSON.stringify([...SEED_USERS, ...DEMO_USERS])).map((u) => ({
+      ...u,
+      accountState: "VERIFIED",
+      isActive: true,
+      failedAttempts: 0,
+      lockoutUntil: 0,
+    }));
+    this.organizations = JSON.parse(JSON.stringify(SEED_ORGANIZATIONS));
     this.foodListings = JSON.parse(JSON.stringify(DEMO_FOOD_LISTINGS));
     this.reservations = JSON.parse(JSON.stringify(DEMO_RESERVATIONS));
     this.pickups = JSON.parse(JSON.stringify(DEMO_PICKUPS));
@@ -387,13 +388,13 @@ async function startServer() {
   });
   app.get("/api/config", (req, res) => {
     res.json({
-      demoMode: process.env.DEMO_MODE === "true",
-      port: PORT,
+      demoMode: process.env.DEMO_MODE !== "false",
+      port: process.env.PUBLIC_PORT ? parseInt(process.env.PUBLIC_PORT) : (process.env.PORT ? parseInt(process.env.PORT) : 3001),
       city: "Surat"
     });
   });
   app.get("/api/demo/users", (req, res) => {
-    if (process.env.DEMO_MODE !== "true") {
+    if (process.env.DEMO_MODE === "false") {
       return res.status(403).json({ error: "Demo mode is disabled in this environment." });
     }
     const grouped = {
@@ -412,7 +413,7 @@ async function startServer() {
     });
   });
   app.post("/api/demo/reset", (req, res) => {
-    if (process.env.DEMO_MODE !== "true") {
+    if (process.env.DEMO_MODE === "false") {
       return res.status(403).json({ error: "Demo reset is disabled in production mode." });
     }
     db.resetToDefault();
@@ -538,7 +539,7 @@ async function startServer() {
       recoveryMessages: db.recoveryMessages,
       notifications: db.notifications,
       outcomeMetrics: db.calculateMetrics(),
-      demoMode: process.env.DEMO_MODE === "true"
+      demoMode: process.env.DEMO_MODE !== "false"
     });
   });
   app.post("/api/listings/create", authMiddleware, (req, res) => {

@@ -11,15 +11,16 @@ services:
       - "3001:3000"
     environment:
       - PORT=3000
+      - PUBLIC_PORT=3001
       - NODE_ENV=production
       - APP_URL=http://localhost:3001
       - VITE_API_URL=http://localhost:3001
       - RECOVERY_SIGNING_SECRET=nourishnet_surat_docker_secret_2026
-      - DEMO_MODE=false
+      - DEMO_MODE=true
+      - VITE_DEMO_MODE=true
     networks:
       - nourishnet_network
 
 networks:
   nourishnet_network:
     driver: bridge
-

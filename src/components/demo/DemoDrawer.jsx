@@ -22,11 +22,21 @@ export const DemoDrawer = ({ isOpen, onClose, onSelectCredentials }) => {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [activeLoggingInId, setActiveLoggingInId] = useState(null);
 
+  // Listen for Escape key to close drawer
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!demoMode || !isOpen) return null;
 
   // Filter 25 demo accounts (5 per role)
   const demoUsers = users.filter(u => u.id && u.id.startsWith('u-demo-'));
-  const accountsForRole = demoUsers.filter(u => u.role === selectedRole);
+  const accountsForRole = (demoUsers.length > 0 ? demoUsers : users).filter(u => u.role === selectedRole).slice(0, 5);
 
   const roleMeta = {
     DONOR: {
@@ -97,7 +107,12 @@ export const DemoDrawer = ({ isOpen, onClose, onSelectCredentials }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-[100] overflow-hidden bg-black/50 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div 
         className="w-full max-w-xl bg-[#FAF7F2] h-full shadow-2xl flex flex-col border-l border-[#E7DCD5] animate-in slide-in-from-right duration-300"
         role="dialog"
@@ -248,3 +263,4 @@ export const DemoDrawer = ({ isOpen, onClose, onSelectCredentials }) => {
     </div>
   );
 };
+

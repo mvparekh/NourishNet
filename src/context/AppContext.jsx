@@ -30,7 +30,7 @@ const AppProvider = ({ children }) => {
             ...prev,
             demoMode: serverConfig?.demoMode !== undefined
               ? serverConfig.demoMode
-              : (serverState?.demoMode !== undefined ? serverState.demoMode : (import.meta.env.VITE_DEMO_MODE === 'true')),
+              : (serverState?.demoMode !== undefined ? serverState.demoMode : (import.meta.env.VITE_DEMO_MODE !== 'false')),
             users: serverState?.users && serverState.users.length > 0 ? serverState.users : prev.users,
             organizations: serverState?.organizations || prev.organizations,
             foodListings: serverState?.foodListings || prev.foodListings,
