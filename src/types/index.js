@@ -1,0 +1,91 @@
+// NourishNet Domain Constants & Reference Models (Converted from TypeScript)
+export const UserRole = {
+  DONOR: 'DONOR',
+  NGO: 'NGO',
+  VOLUNTEER: 'VOLUNTEER',
+  ADMIN: 'ADMIN',
+  SUPER_ADMIN: 'SUPER_ADMIN',
+};
+
+export const FoodCategory = {
+  GUJARATI_THALI: 'GUJARATI_THALI',
+  COOKED_MEAL: 'COOKED_MEAL',
+  ROTIS_BREADS: 'ROTIS_BREADS',
+  DAL_RICE: 'DAL_RICE',
+  BIRYANI_RICE: 'BIRYANI_RICE',
+  BAKERY: 'BAKERY',
+  PRODUCE_VEG: 'PRODUCE_VEG',
+  DAIRY_PACKAGED: 'DAIRY_PACKAGED',
+  SNACKS_FARSAN: 'SNACKS_FARSAN',
+  RAW_INGREDIENTS: 'RAW_INGREDIENTS',
+};
+
+export const QuantityUnit = {
+  PLATES: 'PLATES',
+  KG: 'KG',
+  PACKS: 'PACKS',
+  TRAYS: 'TRAYS',
+  LITRES: 'LITRES',
+};
+
+export const RecoveryModel = {
+  DONATION: 'DONATION',
+  SOCIAL_PRICE: 'SOCIAL_PRICE',
+  RECOVERY_PRICE: 'RECOVERY_PRICE',
+};
+
+export const ListingStatus = {
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED',
+  COMPLETED: 'COMPLETED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
+};
+
+export const ReservationStatus = {
+  LISTED: 'LISTED',
+  MATCHED: 'MATCHED',
+  RESERVED: 'RESERVED',
+  VOLUNTEER_ASSIGNED: 'VOLUNTEER_ASSIGNED',
+  PICKUP_SCHEDULED: 'PICKUP_SCHEDULED',
+  VOLUNTEER_EN_ROUTE: 'VOLUNTEER_EN_ROUTE',
+  PICKUP_STARTED: 'PICKUP_STARTED',
+  VERIFIED: 'VERIFIED',
+  COMPLETED: 'COMPLETED',
+  DELAYED: 'DELAYED',
+  CANCELLED: 'CANCELLED',
+  FAILED: 'FAILED',
+  ISSUE_REPORTED: 'ISSUE_REPORTED',
+  REQUESTED: 'REQUESTED',
+  CONFIRMED: 'CONFIRMED',
+  PICKUP_IN_PROGRESS: 'PICKUP_IN_PROGRESS',
+  EXPIRED: 'EXPIRED',
+};
+
+export const PickupStatus = {
+  PENDING: 'PENDING',
+  ASSIGNED: 'ASSIGNED',
+  VOLUNTEER_EN_ROUTE: 'VOLUNTEER_EN_ROUTE',
+  PICKUP_STARTED: 'PICKUP_STARTED',
+  IN_TRANSIT: 'IN_TRANSIT',
+  VERIFIED: 'VERIFIED',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+};
+
+export const VerificationMethod = {
+  OTP: 'OTP',
+  QR: 'QR',
+};
+
+export const VerificationStage = {
+  DONOR_TO_VOLUNTEER: 'DONOR_TO_VOLUNTEER',
+  VOLUNTEER_TO_NGO: 'VOLUNTEER_TO_NGO',
+  DIRECT_DONOR_TO_NGO: 'DIRECT_DONOR_TO_NGO',
+};
+
+export const SuratLocalities = [
+  'Vesu', 'Adajan', 'Athwa Lines', 'Varachha', 'Katargam',
+  'Udhna', 'Piplod', 'Pal', 'City Light', 'Nanpura', 'Rander', 'Ghanshyam Nagar'
+];

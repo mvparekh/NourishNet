@@ -1,0 +1,24 @@
+services:
+  nourishnet-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nourishnet_app
+    restart: unless-stopped
+    ports:
+      # CRITICAL: Host port 3001 mapped to internal container port 3000.
+      # Host port 3000 is intentionally NEVER claimed or touched.
+      - "3001:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - APP_URL=http://localhost:3001
+      - VITE_API_URL=http://localhost:3001
+      - RECOVERY_SIGNING_SECRET=nourishnet_surat_docker_secret_2026
+      - DEMO_MODE=false
+    networks:
+      - nourishnet_network
+
+networks:
+  nourishnet_network:
+    driver: bridge
