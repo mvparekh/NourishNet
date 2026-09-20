@@ -62,79 +62,67 @@ const LiveRecoveryRouteMap = ({
   const volY = Math.round((1 - t) * (1 - t) * startY + 2 * (1 - t) * t * midY + t * t * endY);
   const remainingMins = Math.max(1, Math.round((1 - t) * (pickup.estimatedArrivalMins || 10)));
   const distanceKm = ((1 - t) * 4.2).toFixed(1);
-  return <div className="relative rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-lg flex flex-col">
-      {
-    /* Top Banner: Status & Privacy Guard */
-  }
-      <div className="p-3.5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+  return <div className="relative rounded-2xl border border-[#3D2319] bg-[#150C07] overflow-hidden shadow-lg flex flex-col">
+      {/* Top Banner: Status & Privacy Guard */}
+      <div className="p-3.5 bg-[#2C1810]/95 backdrop-blur-md border-b border-[#3D2319] flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <div className="relative flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#C85A32] animate-ping absolute" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#C85A32] relative" />
           </div>
           <div>
             <div className="flex items-center gap-1.5 font-bold text-white">
-              <Navigation className="w-3.5 h-3.5 text-purple-400" />
+              <Navigation className="w-3.5 h-3.5 text-[#E07A5F]" />
               <span>Surat Live Rescue Route</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#C85A32] text-white font-mono font-bold">
                 {pickup.status}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-[#D7CCC8]">
               {donorNode.label} Loading Bay → {ngoNode.label} Relief Shelter
             </p>
           </div>
         </div>
 
-        {
-    /* Dynamic Metric Badges */
-  }
+        {/* Dynamic Metric Badges */}
         <div className="flex items-center gap-2">
-          <div className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-1.5 text-slate-300">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+          <div className="px-2.5 py-1 rounded-lg bg-[#3D2319] border border-[#5D4037] flex items-center gap-1.5 text-[#FAF7F2]">
+            <Clock className="w-3.5 h-3.5 text-[#E07A5F]" />
             <span>ETA: <strong>{remainingMins} mins</strong></span>
           </div>
 
-          <div className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-1.5 text-slate-300">
+          <div className="px-2.5 py-1 rounded-lg bg-[#3D2319] border border-[#5D4037] flex items-center gap-1.5 text-[#FAF7F2]">
             <Radio className="w-3.5 h-3.5 text-emerald-400" />
             <span>Dist: <strong>{distanceKm} km</strong></span>
           </div>
 
-          {
-    /* Privacy Toggle (for Donor / Privacy compliance) */
-  }
+          {/* Privacy Toggle (for Donor / Privacy compliance) */}
           <button
-    type="button"
-    onClick={() => setPrivacyMode(!privacyMode)}
-    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all flex items-center gap-1.5 ${privacyMode ? "bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50" : "bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50"}`}
-    title="Privacy-by-workflow: Discloses location only during active dispatch"
-  >
-            {privacyMode ? <EyeOff className="w-3 h-3 text-amber-400" /> : <Eye className="w-3 h-3 text-purple-400" />}
+            type="button"
+            onClick={() => setPrivacyMode(!privacyMode)}
+            className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all flex items-center gap-1.5 ${privacyMode ? "bg-[#3D2319] border-[#C85A32] text-[#E07A5F]" : "bg-[#2C1810] border-[#5D4037] text-[#D7CCC8]"}`}
+            title="Privacy-by-workflow: Discloses location only during active dispatch"
+          >
+            {privacyMode ? <EyeOff className="w-3 h-3 text-[#E07A5F]" /> : <Eye className="w-3 h-3 text-[#FAF7F2]" />}
             <span>{privacyMode ? "Area Mode" : "Precise Track"}</span>
           </button>
         </div>
       </div>
 
-      {
-    /* SVG Canvas Map */
-  }
-      <div className={`relative w-full ${compact ? "h-[280px]" : "h-[360px]"} bg-slate-950 select-none overflow-hidden`}>
+      {/* SVG Canvas Map */}
+      <div className={`relative w-full ${compact ? "h-[280px]" : "h-[360px]"} bg-[#150C07] select-none overflow-hidden`}>
         <svg viewBox="0 0 800 500" className="w-full h-full object-cover">
           <defs>
-            {
-    /* Grid Pattern */
-  }
+            {/* Grid Pattern */}
             <pattern id="grid-pattern-recovery" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.75" strokeOpacity="0.4" />
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2C1810" strokeWidth="0.75" strokeOpacity="0.6" />
             </pattern>
 
-            {
-    /* Route Gradient */
-  }
+            {/* Route Gradient */}
             <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f59e0b" />
-              <stop offset="50%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#10b981" />
+              <stop offset="0%" stopColor="#C85A32" />
+              <stop offset="50%" stopColor="#E07A5F" />
+              <stop offset="100%" stopColor="#FAF7F2" />
             </linearGradient>
 
             {

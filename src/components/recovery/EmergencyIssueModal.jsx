@@ -81,15 +81,15 @@ const EmergencyIssueModal = ({
                   NourishNet Surat Command Center and all stakeholders have been alerted. Recovery state updated to <strong>DELAYED</strong>.
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center justify-center gap-2">
-                <PhoneCall className="w-4 h-4 text-purple-600" />
+              <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E7DCD5] text-xs text-[#2C1810] flex items-center justify-center gap-2">
+                <PhoneCall className="w-4 h-4 text-[#C85A32]" />
                 <span>Emergency Helpline: <strong>+91 98240 10003</strong></span>
               </div>
               <button
-    type="button"
-    onClick={onClose}
-    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
-  >
+                type="button"
+                onClick={onClose}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#2C1810] text-white text-xs font-bold hover:bg-[#1A0F0A] transition-colors"
+              >
                 Close & Return to Hub
               </button>
             </div> : <>

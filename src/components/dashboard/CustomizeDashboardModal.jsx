@@ -73,105 +73,97 @@ const CustomizeDashboardModal = ({
     maxWidth="xl"
   >
       <div className="space-y-5">
-        {
-    /* Info Banner */
-  }
-        <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-100 flex items-start gap-2 text-xs text-purple-900">
-          <Info className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+        {/* Info Banner */}
+        <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E7DCD5] flex items-start gap-2 text-xs text-[#2C1810]">
+          <Info className="w-4 h-4 text-[#C85A32] shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">Simple Personalization:</span> Check the widgets you need for your daily workflow. Critical operations (like urgent pickups or safety issues) will always appear in the top banner regardless of layout.
           </div>
         </div>
 
-        {
-    /* Widget Selector List */
-  }
+        {/* Widget Selector List */}
         <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
           {orderedWidgetDefs.map((widget, index) => {
-    const isVisible = visibleWidgets.includes(widget.id);
-    return <div
-      key={widget.id}
-      className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${isVisible ? "bg-white border-purple-200 shadow-xs" : "bg-slate-50/60 border-slate-200 opacity-60"}`}
-    >
-                {
-      /* Toggle & Title */
-    }
+            const isVisible = visibleWidgets.includes(widget.id);
+            return (
+              <div
+                key={widget.id}
+                className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${isVisible ? "bg-white border-[#C85A32] shadow-xs" : "bg-[#FAF7F2] border-[#E7DCD5] opacity-60"}`}
+              >
+                {/* Toggle & Title */}
                 <div className="flex items-center gap-3 min-w-0">
                   <input
-      type="checkbox"
-      checked={isVisible}
-      onChange={() => toggleWidget(widget.id)}
-      className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
-    />
+                    type="checkbox"
+                    checked={isVisible}
+                    onChange={() => toggleWidget(widget.id)}
+                    className="w-4 h-4 text-[#C85A32] rounded border-[#E7DCD5] focus:ring-[#C85A32] cursor-pointer"
+                  />
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 truncate">
+                      <span className="text-xs font-bold text-[#2C1810] truncate">
                         {widget.title}
                       </span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-[#FAF7F2] border border-[#E7DCD5] text-[#5D4037]">
                         L{widget.level}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate">{widget.subtitle}</p>
+                    <p className="text-[11px] text-[#5D4037] truncate">{widget.subtitle}</p>
                   </div>
                 </div>
 
-                {
-      /* Reorder Buttons */
-    }
+                {/* Reorder Buttons */}
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-      type="button"
-      disabled={index === 0}
-      onClick={() => moveUp(index)}
-      className="p-1 text-slate-400 hover:text-purple-700 hover:bg-purple-50 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      title="Move Up"
-    >
+                    type="button"
+                    disabled={index === 0}
+                    onClick={() => moveUp(index)}
+                    className="p-1 text-[#8D6E63] hover:text-[#C85A32] hover:bg-[#FAF7F2] rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Move Up"
+                  >
                     <ArrowUp className="w-3.5 h-3.5" />
                   </button>
 
                   <button
-      type="button"
-      disabled={index === orderedWidgetDefs.length - 1}
-      onClick={() => moveDown(index)}
-      className="p-1 text-slate-400 hover:text-purple-700 hover:bg-purple-50 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      title="Move Down"
-    >
+                    type="button"
+                    disabled={index === orderedWidgetDefs.length - 1}
+                    onClick={() => moveDown(index)}
+                    className="p-1 text-[#8D6E63] hover:text-[#C85A32] hover:bg-[#FAF7F2] rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Move Down"
+                  >
                     <ArrowDown className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>;
-  })}
+              </div>
+            );
+          })}
         </div>
 
-        {
-    /* Action Footer */
-  }
-        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Action Footer */}
+        <div className="pt-3 border-t border-[#E7DCD5] flex flex-col sm:flex-row items-center justify-between gap-3">
           <button
-    type="button"
-    onClick={handleResetToDefault}
-    className="text-xs font-semibold text-slate-600 hover:text-purple-700 flex items-center gap-1.5 transition-colors"
-  >
+            type="button"
+            onClick={handleResetToDefault}
+            className="text-xs font-semibold text-[#5D4037] hover:text-[#C85A32] flex items-center gap-1.5 transition-colors"
+          >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Restore Recommended Layout</span>
           </button>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
-    type="button"
-    onClick={onClose}
-    className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-  >
+              type="button"
+              onClick={onClose}
+              className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold text-[#5D4037] hover:bg-[#FAF7F2] rounded-xl transition-colors"
+            >
               Cancel
             </button>
 
             <button
-    type="button"
-    onClick={handleSave}
-    className="flex-1 sm:flex-none px-5 py-2 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
-  >
+              type="button"
+              onClick={handleSave}
+              className="flex-1 sm:flex-none px-5 py-2 text-xs font-bold text-white bg-[#C85A32] hover:bg-[#B04A24] rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+            >
               <Check className="w-4 h-4" />
               <span>Save Dashboard ({visibleWidgets.length} active)</span>
             </button>

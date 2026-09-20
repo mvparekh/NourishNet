@@ -131,6 +131,12 @@ const ApiService = {
       method: "POST",
       body: JSON.stringify({ reservationId, text })
     });
+  },
+  async getConfig() {
+    return apiRequest("/api/config");
+  },
+  async resetDemo() {
+    return apiRequest("/api/demo/reset", { method: "POST" });
   }
 };
 export {

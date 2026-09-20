@@ -21,19 +21,25 @@ const AppProvider = ({ children }) => {
     let isMounted = true;
     async function syncBackendState() {
       try {
-        const serverState = await ApiService.fetchState();
-        if (serverState && isMounted) {
+        const [serverState, serverConfig] = await Promise.all([
+          ApiService.fetchState().catch(() => null),
+          ApiService.getConfig().catch(() => null)
+        ]);
+        if (isMounted) {
           setStore((prev) => ({
             ...prev,
-            users: serverState.users && serverState.users.length > 0 ? serverState.users : prev.users,
-            organizations: serverState.organizations || prev.organizations,
-            foodListings: serverState.foodListings || prev.foodListings,
-            reservations: serverState.reservations || prev.reservations,
-            pickups: serverState.pickups || prev.pickups,
-            joinApplications: serverState.joinApplications || prev.joinApplications,
-            issueReports: serverState.issueReports || prev.issueReports,
-            moderationLogs: serverState.moderationLogs || prev.moderationLogs,
-            recoveryMessages: serverState.recoveryMessages || prev.recoveryMessages
+            demoMode: serverConfig?.demoMode !== undefined
+              ? serverConfig.demoMode
+              : (serverState?.demoMode !== undefined ? serverState.demoMode : (import.meta.env.VITE_DEMO_MODE === 'true')),
+            users: serverState?.users && serverState.users.length > 0 ? serverState.users : prev.users,
+            organizations: serverState?.organizations || prev.organizations,
+            foodListings: serverState?.foodListings || prev.foodListings,
+            reservations: serverState?.reservations || prev.reservations,
+            pickups: serverState?.pickups || prev.pickups,
+            joinApplications: serverState?.joinApplications || prev.joinApplications,
+            issueReports: serverState?.issueReports || prev.issueReports,
+            moderationLogs: serverState?.moderationLogs || prev.moderationLogs,
+            recoveryMessages: serverState?.recoveryMessages || prev.recoveryMessages
           }));
         }
         const meRes = await ApiService.getMe().catch(() => null);

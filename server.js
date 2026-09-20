@@ -1,7 +1,21 @@
 import express from "express";
 import path from "path";
 import crypto from "crypto";
+import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
+import {
+  DEMO_USERS,
+  DEMO_FOOD_LISTINGS,
+  DEMO_RESERVATIONS,
+  DEMO_PICKUPS,
+  DEMO_JOIN_APPLICATIONS,
+  DEMO_FEEDBACKS,
+  DEMO_ISSUE_REPORTS,
+  DEMO_AUDIT_LOGS,
+  DEMO_RECOVERY_MESSAGES,
+} from "./src/services/demoData.js";
+
+dotenv.config();
 const SECRET_KEY = process.env.RECOVERY_SIGNING_SECRET || crypto.randomBytes(32).toString("hex");
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 function hashPasswordSecure(plainText, salt) {
@@ -26,313 +40,217 @@ function verifyPasswordSecure(plainText, storedHash) {
   }
 }
 const DEFAULT_PASSWORD_HASH = hashPasswordSecure("SuratSecure@2026", "nourishnet_surat_static_salt");
+const SEED_USERS = [
+  {
+    id: "u-donor-1",
+    fullName: "Vikram Mehta · Kansar Dining",
+    email: "donor@kansar.in",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: "DONOR",
+    orgId: "org-donor-1",
+    orgName: "Kansar Gujarati Thali & Dining",
+    orgType: "RESTAURANT",
+    phone: "+91 98251 44210",
+    city: "Surat",
+    locality: "Vesu",
+    address: "Shop 104, VIP Galleria, University Road, Vesu, Surat",
+    latitude: 21.1517,
+    longitude: 72.7766,
+    accountState: "VERIFIED",
+    isVerified: true,
+    isActive: true,
+    ratingAverage: 4.9,
+    ratingCount: 42,
+    punctualityScore: 98,
+    createdAt: "2026-06-01T08:00:00.000Z",
+    updatedAt: "2026-08-01T08:00:00.000Z"
+  },
+  {
+    id: "u-ngo-1",
+    fullName: "Devang Joshi · Surat Food Relief",
+    email: "ngo@suratfoodrelief.org",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: "NGO",
+    orgId: "org-ngo-1",
+    orgName: "Surat Food Relief & Annakshetra",
+    orgType: "COMMUNITY_KITCHEN",
+    phone: "+91 98252 88410",
+    city: "Surat",
+    locality: "Vesu",
+    address: "Plot 42, Seva Marg, Near Someshwar Square, Vesu, Surat",
+    latitude: 21.1485,
+    longitude: 72.782,
+    accountState: "VERIFIED",
+    isVerified: true,
+    isActive: true,
+    capacityPerDay: 450,
+    ratingAverage: 4.8,
+    ratingCount: 36,
+    punctualityScore: 97,
+    createdAt: "2026-06-05T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z"
+  },
+  {
+    id: "u-vol-1",
+    fullName: "Aarav Patel · Rapid Dispatcher",
+    email: "volunteer@suratrelief.org",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: "VOLUNTEER",
+    orgName: "Surat Food Logistics Dispatch",
+    phone: "+91 97241 12340",
+    city: "Surat",
+    locality: "Vesu",
+    address: "A-204, Riverview Heights, VIP Road, Vesu, Surat",
+    latitude: 21.155,
+    longitude: 72.779,
+    accountState: "VERIFIED",
+    isVerified: true,
+    isActive: true,
+    ratingAverage: 4.9,
+    ratingCount: 28,
+    punctualityScore: 99,
+    createdAt: "2026-06-15T09:00:00.000Z",
+    updatedAt: "2026-08-01T09:00:00.000Z"
+  },
+  {
+    id: "u-admin-1",
+    fullName: "Rameshwar Vyas · City Ops",
+    email: "admin@nourishnet.in",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: "ADMIN",
+    phone: "+91 98250 11001",
+    city: "Surat",
+    locality: "Athwa Lines",
+    address: "Municipal Civic Center, Athwa Gate, Surat",
+    latitude: 21.178,
+    longitude: 72.809,
+    accountState: "VERIFIED",
+    isVerified: true,
+    isActive: true,
+    adminPermissions: {
+      canVerifyOrgs: true,
+      canVerifyOrganizations: true,
+      canModerateListings: true,
+      canManageDisputes: true,
+      canManageIncidents: true,
+      canSuspendUsers: true,
+      canManageUsers: true,
+      canAccessAuditLogs: true
+    },
+    createdAt: "2026-05-01T09:00:00.000Z",
+    updatedAt: "2026-08-01T09:00:00.000Z"
+  },
+  {
+    id: "u-super-1",
+    fullName: "Commissioner Jayesh Parikh · Governance",
+    email: "superadmin@nourishnet.in",
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: "SUPER_ADMIN",
+    phone: "+91 98250 00001",
+    city: "Surat",
+    locality: "Athwa Lines",
+    address: "Surat City Zero Waste Governance Council, Muglisara, Surat",
+    latitude: 21.196,
+    longitude: 72.822,
+    accountState: "VERIFIED",
+    isVerified: true,
+    isActive: true,
+    adminPermissions: {
+      canVerifyOrgs: true,
+      canVerifyOrganizations: true,
+      canModerateListings: true,
+      canManageDisputes: true,
+      canManageIncidents: true,
+      canSuspendUsers: true,
+      canManageUsers: true,
+      canAccessAuditLogs: true,
+      canManageAdmins: true
+    },
+    createdAt: "2026-04-01T09:00:00.000Z",
+    updatedAt: "2026-08-01T09:00:00.000Z"
+  }
+];
+
+const SEED_ORGANIZATIONS = [
+  {
+    id: "org-donor-1",
+    name: "Kansar Gujarati Thali & Dining",
+    type: "RESTAURANT",
+    registrationNumber: "GJ-SRT-REST-2021-9921",
+    fssaiNumber: "10721026000142",
+    city: "Surat",
+    locality: "Vesu",
+    address: "Shop 104, VIP Galleria, University Road, Vesu, Surat - 395007",
+    contactPhone: "+91 98251 44210",
+    contactEmail: "contact@kansarthali.com",
+    isVerified: true,
+    adminUserId: "u-donor-1",
+    capacityPerDay: 400,
+    operatingHours: "11:00 AM - 11:30 PM",
+    createdAt: "2026-06-01T08:00:00.000Z"
+  },
+  {
+    id: "org-ngo-1",
+    name: "Surat Food Relief & Annakshetra",
+    type: "COMMUNITY_KITCHEN",
+    registrationNumber: "TR-GJ-SRT-2018-0442",
+    city: "Surat",
+    locality: "Vesu",
+    address: "Plot 42, Seva Marg, Near Someshwar Square, Vesu, Surat - 395007",
+    contactPhone: "+91 98252 88410",
+    contactEmail: "helpline@suratfoodrelief.org",
+    isVerified: true,
+    adminUserId: "u-ngo-1",
+    capacityPerDay: 450,
+    operatingHours: "08:00 AM - 10:00 PM",
+    createdAt: "2026-06-05T10:00:00.000Z"
+  }
+];
+
 class DatabaseState {
-  users = [
-    {
-      id: "u-donor-1",
-      fullName: "Vikram Mehta \xB7 Kansar Dining",
-      email: "donor@kansar.in",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "DONOR",
-      orgId: "org-donor-1",
-      orgName: "Kansar Gujarati Thali & Dining",
-      orgType: "RESTAURANT",
-      phone: "+91 98251 44210",
-      city: "Surat",
-      locality: "Vesu",
-      address: "Shop 104, VIP Galleria, University Road, Vesu, Surat",
-      latitude: 21.1517,
-      longitude: 72.7766,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      ratingAverage: 4.9,
-      ratingCount: 42,
-      punctualityScore: 98,
-      createdAt: "2026-06-01T08:00:00.000Z",
-      updatedAt: "2026-08-01T08:00:00.000Z"
-    },
-    {
-      id: "u-ngo-1",
-      fullName: "Devang Joshi \xB7 Surat Food Relief",
-      email: "ngo@suratfoodrelief.org",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "NGO",
-      orgId: "org-ngo-1",
-      orgName: "Surat Food Relief & Annakshetra",
-      orgType: "COMMUNITY_KITCHEN",
-      phone: "+91 98252 88410",
-      city: "Surat",
-      locality: "Vesu",
-      address: "Plot 42, Seva Marg, Near Someshwar Square, Vesu, Surat",
-      latitude: 21.1485,
-      longitude: 72.782,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      capacityPerDay: 450,
-      ratingAverage: 4.8,
-      ratingCount: 36,
-      punctualityScore: 97,
-      createdAt: "2026-06-05T10:00:00.000Z",
-      updatedAt: "2026-08-01T10:00:00.000Z"
-    },
-    {
-      id: "u-vol-1",
-      fullName: "Aarav Patel \xB7 Rapid Dispatcher",
-      email: "volunteer@suratrelief.org",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "VOLUNTEER",
-      orgName: "Surat Food Logistics Dispatch",
-      phone: "+91 97241 12340",
-      city: "Surat",
-      locality: "Vesu",
-      address: "A-204, Riverview Heights, VIP Road, Vesu, Surat",
-      latitude: 21.155,
-      longitude: 72.779,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      ratingAverage: 4.9,
-      ratingCount: 28,
-      punctualityScore: 99,
-      createdAt: "2026-06-15T09:00:00.000Z",
-      updatedAt: "2026-08-01T09:00:00.000Z"
-    },
-    {
-      id: "u-vol-2",
-      fullName: "Kavita Desai \xB7 EcoCourier",
-      email: "kavita@suratrelief.org",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "VOLUNTEER",
-      orgName: "Surat Food Logistics Dispatch",
-      phone: "+91 97242 56780",
-      city: "Surat",
-      locality: "Athwa Lines",
-      address: "G-12, Green City Enclave, Athwa Lines, Surat",
-      latitude: 21.173,
-      longitude: 72.802,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      ratingAverage: 4.8,
-      ratingCount: 22,
-      punctualityScore: 96,
-      createdAt: "2026-06-20T11:00:00.000Z",
-      updatedAt: "2026-08-01T11:00:00.000Z"
-    },
-    {
-      id: "u-admin-1",
-      fullName: "Rameshwar Vyas \xB7 City Ops",
-      email: "admin@nourishnet.in",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "ADMIN",
-      phone: "+91 98250 11001",
-      city: "Surat",
-      locality: "Athwa Lines",
-      address: "Municipal Civic Center, Athwa Gate, Surat",
-      latitude: 21.178,
-      longitude: 72.809,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      adminPermissions: {
-        canVerifyOrgs: true,
-        canVerifyOrganizations: true,
-        canModerateListings: true,
-        canManageDisputes: true,
-        canManageIncidents: true,
-        canSuspendUsers: true,
-        canManageUsers: true,
-        canAccessAuditLogs: true
-      },
-      createdAt: "2026-05-01T09:00:00.000Z",
-      updatedAt: "2026-08-01T09:00:00.000Z"
-    },
-    {
-      id: "u-super-1",
-      fullName: "Commissioner Jayesh Parikh \xB7 Governance",
-      email: "superadmin@nourishnet.in",
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      role: "SUPER_ADMIN",
-      phone: "+91 98250 00001",
-      city: "Surat",
-      locality: "Athwa Lines",
-      address: "Surat City Zero Waste Governance Council, Muglisara, Surat",
-      latitude: 21.196,
-      longitude: 72.822,
-      accountState: "VERIFIED",
-      isVerified: true,
-      isActive: true,
-      adminPermissions: {
-        canVerifyOrgs: true,
-        canVerifyOrganizations: true,
-        canModerateListings: true,
-        canManageDisputes: true,
-        canManageIncidents: true,
-        canSuspendUsers: true,
-        canManageUsers: true,
-        canAccessAuditLogs: true,
-        canManageAdmins: true
-      },
-      createdAt: "2026-04-01T09:00:00.000Z",
-      updatedAt: "2026-08-01T09:00:00.000Z"
-    }
-  ];
-  organizations = [
-    {
-      id: "org-donor-1",
-      name: "Kansar Gujarati Thali & Dining",
-      type: "RESTAURANT",
-      registrationNumber: "GJ-SRT-REST-2021-9921",
-      fssaiNumber: "10721026000142",
-      city: "Surat",
-      locality: "Vesu",
-      address: "Shop 104, VIP Galleria, University Road, Vesu, Surat - 395007",
-      contactPhone: "+91 98251 44210",
-      contactEmail: "contact@kansarthali.com",
-      isVerified: true,
-      adminUserId: "u-donor-1",
-      capacityPerDay: 400,
-      operatingHours: "11:00 AM - 11:30 PM",
-      createdAt: "2026-06-01T08:00:00.000Z"
-    },
-    {
-      id: "org-ngo-1",
-      name: "Surat Food Relief & Annakshetra",
-      type: "COMMUNITY_KITCHEN",
-      registrationNumber: "TR-GJ-SRT-2018-0442",
-      city: "Surat",
-      locality: "Vesu",
-      address: "Plot 42, Seva Marg, Near Someshwar Square, Vesu, Surat - 395007",
-      contactPhone: "+91 98252 88410",
-      contactEmail: "helpline@suratfoodrelief.org",
-      isVerified: true,
-      adminUserId: "u-ngo-1",
-      capacityPerDay: 450,
-      operatingHours: "08:00 AM - 10:00 PM",
-      createdAt: "2026-06-05T10:00:00.000Z"
-    }
-  ];
-  foodListings = [
-    {
-      id: "list-srt-101",
-      donorId: "u-donor-1",
-      donorName: "Kansar Gujarati Thali",
-      donorOrgType: "RESTAURANT",
-      donorPhone: "+91 98251 44210",
-      donorCity: "Surat",
-      donorLocality: "Vesu",
-      title: "Fresh Gujarati Lunch Thali Surplus",
-      category: "GUJARATI_THALI",
-      quantity: 45,
-      totalQuantity: 45,
-      reservedQuantity: 0,
-      remainingQuantity: 45,
-      unit: "PLATES",
-      recoveryModel: "DONATION",
-      pricePerUnit: 0,
-      originalCommercialPrice: 280,
-      dietaryType: "VEG",
-      storageCondition: "HOT_INSULATED",
-      packagingStatus: "FOOD_GRADE_CONTAINERS",
-      imageUrl: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80",
-      preparedAt: new Date(Date.now() - 2 * 60 * 60 * 1e3).toISOString(),
-      expiresAt: new Date(Date.now() + 3.5 * 60 * 60 * 1e3).toISOString(),
-      pickupWindowStart: new Date(Date.now() - 1 * 60 * 60 * 1e3).toISOString(),
-      pickupWindowEnd: new Date(Date.now() + 3 * 60 * 60 * 1e3).toISOString(),
-      pickupAddress: "Shop 104, VIP Galleria, University Road, Vesu, Surat",
-      latitude: 21.1517,
-      longitude: 72.7766,
-      status: "AVAILABLE",
-      notes: "Contains freshly prepared Gujarati Dal, Baati, Steamed Rice, Ringan Ravaiya Sabzi, and soft Phulka Rotis. Packed in sealed thermo-cases.",
-      allergens: ["DAIRY", "GLUTEN"],
-      foodSafetyDeclaration: true,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1e3).toISOString(),
-      updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1e3).toISOString()
-    },
-    {
-      id: "list-srt-102",
-      donorId: "u-donor-1",
-      donorName: "Kansar Gujarati Thali",
-      donorOrgType: "RESTAURANT",
-      donorPhone: "+91 98251 44210",
-      donorCity: "Surat",
-      donorLocality: "Vesu",
-      title: "Nutritious Steamed Basmati Rice & Dal",
-      category: "DAL_RICE",
-      quantity: 20,
-      totalQuantity: 20,
-      reservedQuantity: 0,
-      remainingQuantity: 20,
-      unit: "KG",
-      recoveryModel: "DONATION",
-      pricePerUnit: 0,
-      originalCommercialPrice: 160,
-      dietaryType: "JAIN_VEG",
-      storageCondition: "HOT_INSULATED",
-      packagingStatus: "BULK_TRAYS",
-      imageUrl: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&auto=format&fit=crop&q=80",
-      preparedAt: new Date(Date.now() - 1.5 * 60 * 60 * 1e3).toISOString(),
-      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1e3).toISOString(),
-      pickupWindowStart: new Date(Date.now() - 30 * 60 * 1e3).toISOString(),
-      pickupWindowEnd: new Date(Date.now() + 2 * 60 * 60 * 1e3).toISOString(),
-      pickupAddress: "Shop 104, VIP Galleria, University Road, Vesu, Surat",
-      latitude: 21.1517,
-      longitude: 72.7766,
-      status: "AVAILABLE",
-      notes: "Jain preparation without onion/garlic/root vegetables. Kept above 65\xB0C.",
-      allergens: ["DAIRY"],
-      foodSafetyDeclaration: true,
-      createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1e3).toISOString(),
-      updatedAt: new Date(Date.now() - 1.5 * 60 * 60 * 1e3).toISOString()
-    }
-  ];
+  users = [];
+  organizations = [];
+  foodListings = [];
   reservations = [];
   pickups = [];
   notifications = [];
-  joinApplications = [
-    {
-      id: "app-srt-201",
-      role: "DONOR",
-      applicantName: "Nilesh Gandhi",
-      email: "nilesh@shreekrishnabakers.in",
-      phone: "+91 98255 12090",
-      city: "Surat",
-      locality: "Adajan",
-      address: "Shop 5, Galaxy Hub, Anand Mahal Road, Adajan, Surat",
-      organizationName: "Shree Krishna Artisanal Bakery",
-      orgType: "BAKERY",
-      fssaiNumber: "10723026001201",
-      capacityPerDay: 120,
-      status: "UNDER_REVIEW",
-      createdAt: new Date(Date.now() - 18 * 60 * 60 * 1e3).toISOString()
-    },
-    {
-      id: "app-srt-202",
-      role: "VOLUNTEER",
-      applicantName: "Pooja Barot",
-      email: "pooja.barot@gmail.com",
-      phone: "+91 97245 44810",
-      city: "Surat",
-      locality: "Pal",
-      address: "B-302, Green Orchid, Pal Gam, Surat",
-      vehicleType: "TWO_WHEELER",
-      operatingRadiusKm: 8,
-      availabilityHours: "4:00 PM - 9:00 PM",
-      emergencyContact: "+91 97245 44811",
-      status: "APPLIED",
-      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1e3).toISOString()
-    }
-  ];
+  joinApplications = [];
   issueReports = [];
   feedbacks = [];
   moderationLogs = [];
   recoveryMessages = [];
-  sessions = /* @__PURE__ */ new Map();
-  setupTokens = /* @__PURE__ */ new Map();
+  sessions = new Map();
+  setupTokens = new Map();
+  listingLocks = new Set();
+  otpAttempts = new Map();
+  usedNonces = new Set();
+
+  constructor() {
+    this.resetToDefault();
+  }
+
+  resetToDefault() {
+    // Combine seed base users + 25 Demo Users
+    this.users = [
+      ...SEED_USERS,
+      ...DEMO_USERS,
+    ];
+    this.organizations = [
+      ...SEED_ORGANIZATIONS,
+    ];
+    this.foodListings = JSON.parse(JSON.stringify(DEMO_FOOD_LISTINGS));
+    this.reservations = JSON.parse(JSON.stringify(DEMO_RESERVATIONS));
+    this.pickups = JSON.parse(JSON.stringify(DEMO_PICKUPS));
+    this.joinApplications = JSON.parse(JSON.stringify(DEMO_JOIN_APPLICATIONS));
+    this.issueReports = JSON.parse(JSON.stringify(DEMO_ISSUE_REPORTS));
+    this.feedbacks = JSON.parse(JSON.stringify(DEMO_FEEDBACKS));
+    this.moderationLogs = JSON.parse(JSON.stringify(DEMO_AUDIT_LOGS));
+    this.recoveryMessages = JSON.parse(JSON.stringify(DEMO_RECOVERY_MESSAGES));
+    this.notifications = [];
+    this.otpAttempts = new Map();
+    this.usedNonces = new Set();
+  }
   // Mutex lock for listings during claim operations to prevent double-booking
-  listingLocks = /* @__PURE__ */ new Set();
   async acquireLock(listingId) {
     if (this.listingLocks.has(listingId)) return false;
     this.listingLocks.add(listingId);
@@ -467,13 +385,57 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: (/* @__PURE__ */ new Date()).toISOString(), city: "Surat" });
   });
+  app.get("/api/config", (req, res) => {
+    res.json({
+      demoMode: process.env.DEMO_MODE === "true",
+      port: PORT,
+      city: "Surat"
+    });
+  });
+  app.get("/api/demo/users", (req, res) => {
+    if (process.env.DEMO_MODE !== "true") {
+      return res.status(403).json({ error: "Demo mode is disabled in this environment." });
+    }
+    const grouped = {
+      DONOR: DEMO_USERS.filter((u) => u.role === "DONOR"),
+      NGO: DEMO_USERS.filter((u) => u.role === "NGO"),
+      VOLUNTEER: DEMO_USERS.filter((u) => u.role === "VOLUNTEER"),
+      ADMIN: DEMO_USERS.filter((u) => u.role === "ADMIN"),
+      SUPER_ADMIN: DEMO_USERS.filter((u) => u.role === "SUPER_ADMIN"),
+    };
+    res.json({
+      success: true,
+      totalCount: DEMO_USERS.length,
+      users: DEMO_USERS.map(({ passwordHash: _, ...u }) => u),
+      grouped,
+      defaultPassword: "SuratSecure@2026"
+    });
+  });
+  app.post("/api/demo/reset", (req, res) => {
+    if (process.env.DEMO_MODE !== "true") {
+      return res.status(403).json({ error: "Demo reset is disabled in production mode." });
+    }
+    db.resetToDefault();
+    res.json({ success: true, message: "Demo data reset successfully." });
+  });
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required." });
     }
     const trimmedEmail = email.trim().toLowerCase();
-    const user = db.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+    let user = db.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+    if (!user) {
+      const alias1 = trimmedEmail
+        .replace('volunteer0', 'vol0')
+        .replace('superadmin0', 'super0');
+      const alias2 = trimmedEmail
+        .replace('vol0', 'volunteer0')
+        .replace('super0', 'superadmin0');
+      user = db.users.find(
+        (u) => u.email.toLowerCase() === alias1 || u.email.toLowerCase() === alias2
+      );
+    }
     if (!user || !verifyPasswordSecure(password, user.passwordHash || "")) {
       return res.status(401).json({ error: "Invalid email address or password combination." });
     }
@@ -575,7 +537,8 @@ async function startServer() {
       moderationLogs: db.moderationLogs,
       recoveryMessages: db.recoveryMessages,
       notifications: db.notifications,
-      outcomeMetrics: db.calculateMetrics()
+      outcomeMetrics: db.calculateMetrics(),
+      demoMode: process.env.DEMO_MODE === "true"
     });
   });
   app.post("/api/listings/create", authMiddleware, (req, res) => {
@@ -584,7 +547,8 @@ async function startServer() {
       return res.status(403).json({ error: "Only verified food donors can create surplus listings." });
     }
     const { title, category, quantity, unit, recoveryModel, pricePerUnit, dietaryType, expiresAt, pickupWindowEnd, notes } = req.body;
-    if (!title || !quantity || quantity <= 0 || !expiresAt) {
+    const expiry = expiresAt || pickupWindowEnd;
+    if (!title || !quantity || Number(quantity) <= 0 || !expiry) {
       return res.status(400).json({ error: "Title, positive quantity, and expiry timestamp are required." });
     }
     const newListing = {
@@ -608,9 +572,9 @@ async function startServer() {
       storageCondition: req.body.storageCondition || "HOT_INSULATED",
       packagingStatus: req.body.packagingStatus || "FOOD_GRADE_CONTAINERS",
       preparedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      expiresAt,
+      expiresAt: expiry,
       pickupWindowStart: (/* @__PURE__ */ new Date()).toISOString(),
-      pickupWindowEnd: pickupWindowEnd || expiresAt,
+      pickupWindowEnd: pickupWindowEnd || expiry,
       pickupAddress: user.address,
       latitude: user.latitude,
       longitude: user.longitude,
@@ -894,6 +858,240 @@ async function startServer() {
     }
     res.json({ success: true, message: "Reservation cancelled and inventory restored to available pool." });
   });
+
+  app.post("/api/handoff/advance-state", authMiddleware, (req, res) => {
+    const { reservationId, toState, notes } = req.body;
+    const reservation = db.reservations.find((r) => r.id === reservationId);
+    if (!reservation) {
+      return res.status(404).json({ error: "Reservation not found." });
+    }
+    const validStates = [
+      "RESERVED",
+      "ASSIGNED",
+      "SCHEDULED",
+      "PICKED_UP",
+      "IN_TRANSIT",
+      "DELIVERED",
+      "COMPLETED",
+      "CANCELLED"
+    ];
+    if (!validStates.includes(toState)) {
+      return res.status(400).json({ error: `Invalid target state: ${toState}` });
+    }
+    const nowIso = new Date().toISOString();
+    reservation.status = toState;
+    if (!reservation.timeline) reservation.timeline = [];
+    reservation.timeline.push({
+      step: toState,
+      label: notes || `State transitioned to ${toState} by ${req.user.fullName}.`,
+      timestamp: nowIso,
+      actorName: req.user.fullName,
+      actorRole: req.user.role
+    });
+    reservation.updatedAt = nowIso;
+    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+    if (pickup) {
+      if (toState === "PICKED_UP" || toState === "IN_TRANSIT") pickup.status = "IN_TRANSIT";
+      if (toState === "DELIVERED" || toState === "COMPLETED") pickup.status = "COMPLETED";
+      pickup.updatedAt = nowIso;
+    }
+    res.json({
+      success: true,
+      message: `Recovery state advanced to ${toState}.`,
+      reservation,
+      pickup
+    });
+  });
+
+  app.post("/api/reservations/assign-volunteer", authMiddleware, (req, res) => {
+    const { reservationId, volunteerId } = req.body;
+    const reservation = db.reservations.find((r) => r.id === reservationId);
+    if (!reservation) {
+      return res.status(404).json({ error: "Reservation not found." });
+    }
+    const volunteer = db.users.find((u) => u.id === volunteerId && u.role === "VOLUNTEER");
+    if (!volunteer) {
+      return res.status(404).json({ error: "Volunteer not found." });
+    }
+    const nowIso = new Date().toISOString();
+    reservation.assignedVolunteerId = volunteer.id;
+    reservation.assignedVolunteerName = volunteer.fullName;
+    reservation.status = "ASSIGNED";
+    if (!reservation.timeline) reservation.timeline = [];
+    reservation.timeline.push({
+      step: "ASSIGNED",
+      label: `Courier ${volunteer.fullName} assigned for surplus transport.`,
+      timestamp: nowIso,
+      actorName: req.user.fullName,
+      actorRole: req.user.role
+    });
+    reservation.updatedAt = nowIso;
+    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+    if (pickup) {
+      pickup.volunteerId = volunteer.id;
+      pickup.status = "ASSIGNED";
+      pickup.pickupNotes = `Assigned to courier ${volunteer.fullName}.`;
+      pickup.updatedAt = nowIso;
+    }
+    res.json({
+      success: true,
+      message: `Volunteer ${volunteer.fullName} assigned to reservation.`,
+      reservation,
+      pickup
+    });
+  });
+
+  app.post("/api/verification/verify-otp", authMiddleware, (req, res) => {
+    const { reservationId, enteredOtp } = req.body;
+    if (!reservationId || !enteredOtp) {
+      return res.status(400).json({ error: "Reservation ID and OTP code are required." });
+    }
+    const attempts = db.otpAttempts.get(reservationId) || 0;
+    if (attempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        errorCode: "RATE_LIMITED",
+        error: "Too many failed OTP verification attempts. Verification locked for security.",
+        attemptsRemaining: 0
+      });
+    }
+    const reservation = db.reservations.find((r) => r.id === reservationId);
+    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+    if (!reservation || !pickup) {
+      return res.status(404).json({ error: "Active recovery record not found." });
+    }
+    const expectedOtp = pickup.otpCode || reservation.confirmationCode;
+    if (enteredOtp.trim() !== expectedOtp?.trim()) {
+      const newAttempts = attempts + 1;
+      db.otpAttempts.set(reservationId, newAttempts);
+      return res.status(400).json({
+        success: false,
+        errorCode: "INVALID_CODE",
+        error: "Incorrect 4-digit verification OTP.",
+        attemptsRemaining: Math.max(0, 5 - newAttempts)
+      });
+    }
+    db.otpAttempts.delete(reservationId);
+    const nowIso = new Date().toISOString();
+    pickup.status = "COMPLETED";
+    pickup.verifiedAt = nowIso;
+    pickup.verifiedBy = req.user.id;
+    pickup.verifiedByName = req.user.fullName;
+    pickup.verificationMethod = "OTP";
+    reservation.status = "COMPLETED";
+    reservation.completedAt = nowIso;
+    if (!reservation.timeline) reservation.timeline = [];
+    reservation.timeline.push({
+      step: "COMPLETED",
+      label: `Handoff verified via 4-digit OTP by ${req.user.fullName}.`,
+      timestamp: nowIso,
+      actorName: req.user.fullName,
+      actorRole: req.user.role
+    });
+    reservation.updatedAt = nowIso;
+    res.json({
+      success: true,
+      message: "OTP verified successfully. Food recovery completed.",
+      reservation,
+      pickup
+    });
+  });
+
+  app.post("/api/verification/verify-qr", authMiddleware, (req, res) => {
+    const { pickupId, qrToken } = req.body;
+    if (!pickupId || !qrToken) {
+      return res.status(400).json({ error: "Pickup ID and QR token are required." });
+    }
+    const pickup = db.pickups.find((p) => p.id === pickupId);
+    if (!pickup) {
+      return res.status(404).json({ error: "Pickup task not found." });
+    }
+    if (db.usedNonces.has(qrToken)) {
+      return res.status(400).json({
+        success: false,
+        errorCode: "NONCE_REPLAYED",
+        error: "This single-use cryptographic QR token has already been consumed."
+      });
+    }
+    if (pickup.qrToken !== qrToken.trim()) {
+      return res.status(400).json({
+        success: false,
+        errorCode: "INVALID_TOKEN",
+        error: "Cryptographic signature mismatch on QR token."
+      });
+    }
+    db.usedNonces.add(qrToken.trim());
+    const nowIso = new Date().toISOString();
+    pickup.status = "COMPLETED";
+    pickup.verifiedAt = nowIso;
+    pickup.verifiedBy = req.user.id;
+    pickup.verifiedByName = req.user.fullName;
+    pickup.verificationMethod = "QR_HMAC";
+    const reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+    if (reservation) {
+      reservation.status = "COMPLETED";
+      reservation.completedAt = nowIso;
+      if (!reservation.timeline) reservation.timeline = [];
+      reservation.timeline.push({
+        step: "COMPLETED",
+        label: `Handoff cryptographically verified via HMAC QR token by ${req.user.fullName}.`,
+        timestamp: nowIso,
+        actorName: req.user.fullName,
+        actorRole: req.user.role
+      });
+      reservation.updatedAt = nowIso;
+    }
+    res.json({
+      success: true,
+      message: "HMAC QR token verified successfully. Single-use nonce consumed.",
+      pickup,
+      reservation
+    });
+  });
+
+  app.post("/api/verification/fallback-confirm", authMiddleware, (req, res) => {
+    const { reservationId, pickupId, reason } = req.body;
+    const reservation = db.reservations.find((r) => r.id === reservationId);
+    const pickup = db.pickups.find((p) => p.id === pickupId || p.reservationId === reservationId);
+    if (!reservation || !pickup) {
+      return res.status(404).json({ error: "Recovery task record not found." });
+    }
+    const nowIso = new Date().toISOString();
+    pickup.status = "COMPLETED";
+    pickup.verifiedAt = nowIso;
+    pickup.verifiedBy = req.user.id;
+    pickup.verifiedByName = req.user.fullName;
+    pickup.verificationMethod = "MANUAL_FALLBACK";
+    pickup.fallbackReason = reason || "Battery/Device failure confirmed on-site.";
+    reservation.status = "COMPLETED";
+    reservation.completedAt = nowIso;
+    if (!reservation.timeline) reservation.timeline = [];
+    reservation.timeline.push({
+      step: "COMPLETED",
+      label: `Operational manual fallback confirmed (${pickup.fallbackReason}) by ${req.user.fullName}.`,
+      timestamp: nowIso,
+      actorName: req.user.fullName,
+      actorRole: req.user.role
+    });
+    reservation.updatedAt = nowIso;
+    db.moderationLogs.unshift({
+      id: `log-${Date.now()}`,
+      action: "OPERATIONAL_FALLBACK_VERIFIED",
+      targetId: reservation.id,
+      targetName: reservation.listingTitle,
+      adminId: req.user.id,
+      adminName: req.user.fullName,
+      reason: pickup.fallbackReason,
+      timestamp: nowIso
+    });
+    res.json({
+      success: true,
+      message: "Operational fallback verified and audited.",
+      reservation,
+      pickup
+    });
+  });
+
   app.post("/api/applications/submit", (req, res) => {
     const { role, applicantName, email, phone, locality, address, organizationName, orgType, fssaiNumber, vehicleType } = req.body;
     if (!role || !applicantName || !email || !phone) {
@@ -1015,6 +1213,39 @@ async function startServer() {
     });
     res.json({ success: true, message: "Admin invitation created.", setupToken });
   });
+
+  app.post("/api/admin/revoke", authMiddleware, (req, res) => {
+    if (req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Only Super Admin can revoke administrative credentials." });
+    }
+    const { adminId, reason } = req.body;
+    const target = db.users.find((u) => u.id === adminId && (u.role === "ADMIN" || u.role === "SUPER_ADMIN"));
+    if (!target) {
+      return res.status(404).json({ error: "Admin account not found." });
+    }
+    if (target.id === req.user.id) {
+      return res.status(400).json({ error: "Cannot revoke your own active super admin credentials." });
+    }
+    target.accountState = "SUSPENDED";
+    target.isActive = false;
+    const nowIso = new Date().toISOString();
+    db.moderationLogs.unshift({
+      id: `log-${Date.now()}`,
+      action: "REVOKE_ADMIN",
+      targetId: target.id,
+      targetName: target.fullName,
+      adminId: req.user.id,
+      adminName: req.user.fullName,
+      reason: reason || "Credentials revoked by Governance Council",
+      timestamp: nowIso
+    });
+    res.json({
+      success: true,
+      message: `Administrative credentials for ${target.fullName} revoked.`,
+      targetUser: { id: target.id, fullName: target.fullName, accountState: target.accountState }
+    });
+  });
+
   app.post("/api/messages/send", authMiddleware, (req, res) => {
     const user = req.user;
     const { reservationId, text } = req.body;

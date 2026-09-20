@@ -103,58 +103,58 @@ const QRScannerModal = ({ isOpen, onClose, onSuccess }) => {
               Cryptographic QR Token Payload
             </label>
             <textarea
-    rows={3}
-    value={tokenInput}
-    onChange={(e) => setTokenInput(e.target.value)}
-    placeholder="Paste signed token string (or use camera/quick tokens below)..."
-    className="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600"
-  />
+              rows={3}
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="Paste signed token string (or use camera/quick tokens below)..."
+              className="w-full px-3 py-2 text-xs font-mono bg-[#FAF7F2] border border-[#E7DCD5] rounded-xl focus:bg-white focus:ring-2 focus:ring-[#C85A32]/20 focus:border-[#C85A32]"
+            />
           </div>
 
-          {
-    /* Quick Token Test Options (Convenient in browser preview) */
-  }
-          {availableDemoTokens.length > 0 && <div className="p-3 rounded-xl bg-purple-50/50 border border-purple-100 space-y-2">
-              <span className="text-[11px] font-semibold text-purple-900 block">
+          {/* Quick Token Test Options (Convenient in browser preview) */}
+          {availableDemoTokens.length > 0 && (
+            <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#E7DCD5] space-y-2">
+              <span className="text-[11px] font-semibold text-[#2C1810] block">
                 Active Pending Pickup Tokens in Surat:
               </span>
               <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                {availableDemoTokens.map((p) => <button
-    key={p.id}
-    type="button"
-    onClick={() => {
-      setTokenInput(p.qrToken);
-      handleVerify(p.qrToken);
-    }}
-    className="w-full text-left p-1.5 px-2.5 rounded-lg bg-white border border-purple-200 hover:border-purple-400 text-[11px] flex items-center justify-between transition-colors"
-  >
-                    <span className="truncate max-w-[240px] text-slate-800">
+                {availableDemoTokens.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setTokenInput(p.qrToken);
+                      handleVerify(p.qrToken);
+                    }}
+                    className="w-full text-left p-1.5 px-2.5 rounded-lg bg-white border border-[#E7DCD5] hover:border-[#C85A32] text-[11px] flex items-center justify-between transition-colors"
+                  >
+                    <span className="truncate max-w-[240px] text-[#2C1810]">
                       Token for Pickup #{p.id.slice(-6)}
                     </span>
-                    <span className="text-[10px] font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-semibold text-[#C85A32] bg-[#FAF7F2] border border-[#E7DCD5] px-2 py-0.5 rounded">
                       Verify This
                     </span>
-                  </button>)}
+                  </button>
+                ))}
               </div>
-            </div>}
+            </div>
+          )}
 
-          {
-    /* Action buttons */
-  }
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          {/* Action buttons */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E7DCD5]">
             <button
-    type="button"
-    onClick={handleClose}
-    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
-  >
+              type="button"
+              onClick={handleClose}
+              className="px-4 py-2 text-xs font-semibold text-[#5D4037] hover:text-[#2C1810]"
+            >
               Cancel
             </button>
             <button
-    type="button"
-    onClick={() => handleVerify()}
-    disabled={isVerifying || !tokenInput.trim()}
-    className="px-5 py-2 text-xs font-semibold text-white bg-purple-700 hover:bg-purple-800 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
-  >
+              type="button"
+              onClick={() => handleVerify()}
+              disabled={isVerifying || !tokenInput.trim()}
+              className="px-5 py-2 text-xs font-semibold text-white bg-[#C85A32] hover:bg-[#B04A24] disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+            >
               {isVerifying ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
               <span>Verify Single-Use Token</span>
             </button>

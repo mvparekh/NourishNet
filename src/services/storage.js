@@ -1,5 +1,16 @@
 import { hashPassword, generateSignedQrToken } from "./security";
-const STORAGE_KEY = "nourishnet_surat_store_v3";
+import {
+  DEMO_USERS,
+  DEMO_FOOD_LISTINGS,
+  DEMO_RESERVATIONS,
+  DEMO_PICKUPS,
+  DEMO_JOIN_APPLICATIONS,
+  DEMO_FEEDBACKS,
+  DEMO_ISSUE_REPORTS,
+  DEMO_AUDIT_LOGS,
+  DEMO_RECOVERY_MESSAGES
+} from "./demoData";
+const STORAGE_KEY = "nourishnet_surat_store_v4";
 const INITIAL_ORGANIZATIONS = [
   {
     id: "org-donor-1",
@@ -1154,26 +1165,38 @@ const StorageService = {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
+        // Ensure demo users are present
+        const hasDemoUsers = parsed.users && parsed.users.some(u => u.id === 'u-demo-donor-1');
+        if (!hasDemoUsers) {
+          parsed.users = [...(parsed.users || []), ...DEMO_USERS];
+          parsed.foodListings = [...(parsed.foodListings || []), ...DEMO_FOOD_LISTINGS];
+          parsed.reservations = [...(parsed.reservations || []), ...DEMO_RESERVATIONS];
+          parsed.pickups = [...(parsed.pickups || []), ...DEMO_PICKUPS];
+          parsed.joinApplications = [...(parsed.joinApplications || []), ...DEMO_JOIN_APPLICATIONS];
+          parsed.feedbacks = [...(parsed.feedbacks || []), ...DEMO_FEEDBACKS];
+          parsed.issueReports = [...(parsed.issueReports || []), ...DEMO_ISSUE_REPORTS];
+          parsed.moderationLogs = [...(parsed.moderationLogs || []), ...DEMO_AUDIT_LOGS];
+          parsed.recoveryMessages = [...(parsed.recoveryMessages || []), ...DEMO_RECOVERY_MESSAGES];
+        }
         return {
           ...parsed,
-          // Guarantee default demoMode is true for rich demo exploration unless set
-          demoMode: parsed.demoMode !== void 0 ? parsed.demoMode : true
+          demoMode: parsed.demoMode !== void 0 ? parsed.demoMode : false
         };
       }
     } catch {
     }
     const initialData = {
-      users: INITIAL_USERS,
+      users: [...INITIAL_USERS, ...DEMO_USERS],
       organizations: INITIAL_ORGANIZATIONS,
-      foodListings: INITIAL_LISTINGS,
-      reservations: INITIAL_RESERVATIONS,
-      pickups: INITIAL_PICKUPS,
+      foodListings: [...INITIAL_LISTINGS, ...DEMO_FOOD_LISTINGS],
+      reservations: [...INITIAL_RESERVATIONS, ...DEMO_RESERVATIONS],
+      pickups: [...INITIAL_PICKUPS, ...DEMO_PICKUPS],
       notifications: INITIAL_NOTIFICATIONS,
-      feedbacks: INITIAL_FEEDBACKS,
-      issueReports: INITIAL_ISSUE_REPORTS,
-      joinApplications: INITIAL_APPLICATIONS,
-      moderationLogs: INITIAL_AUDIT_LOGS,
-      recoveryMessages: INITIAL_RECOVERY_MESSAGES,
+      feedbacks: [...INITIAL_FEEDBACKS, ...DEMO_FEEDBACKS],
+      issueReports: [...INITIAL_ISSUE_REPORTS, ...DEMO_ISSUE_REPORTS],
+      joinApplications: [...INITIAL_APPLICATIONS, ...DEMO_JOIN_APPLICATIONS],
+      moderationLogs: [...INITIAL_AUDIT_LOGS, ...DEMO_AUDIT_LOGS],
+      recoveryMessages: [...INITIAL_RECOVERY_MESSAGES, ...DEMO_RECOVERY_MESSAGES],
       verificationHistory: INITIAL_VERIFICATION_HISTORY,
       consumedNonces: [],
       currentUserId: "",

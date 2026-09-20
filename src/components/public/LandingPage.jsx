@@ -1,205 +1,242 @@
+import { useEffect } from "react";
 import {
   HeartHandshake,
   MapPin,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  QrCode,
+  Clock,
+  Sparkles,
+  Users,
+  UtensilsCrossed,
+  Truck,
+  Building2
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-const LandingPage = ({ onOpenLogin, onOpenApply }) => {
-  const { outcomeMetrics } = useApp();
-  return <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-purple-500 selection:text-white">
-      {
-    /* Hero Section */
-  }
-      <section className="relative overflow-hidden bg-gradient-to-b from-purple-950 via-slate-950 to-slate-900 text-white pt-16 pb-24 px-4 sm:px-6 lg:px-8">
-        {
-    /* Subtle decorative glow */
-  }
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-fuchsia-600/15 rounded-full blur-3xl pointer-events-none" />
+
+const LandingPage = ({ onOpenLogin, onOpenApply, onOpenDemo }) => {
+  const { outcomeMetrics, demoMode } = useApp();
+
+  // Listen for Ctrl key to toggle Demo Mode drawer when on landing screen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Control" || (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Control")) {
+        if (demoMode && onOpenDemo) {
+          onOpenDemo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [demoMode, onOpenDemo]);
+
+  return (
+    <div className="min-h-screen bg-[#FAF7F2] text-[#2C1810] flex flex-col selection:bg-[#C85A32] selection:text-white">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#2C1810] via-[#3E2419] to-[#2C1810] text-[#FAF7F2] pt-16 pb-24 px-4 sm:px-6 lg:px-8 shadow-inner">
+        {/* Subtle decorative warm glow */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#C85A32]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 -right-32 w-96 h-96 bg-[#8D6E63]/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative z-10 text-center space-y-8">
-          {
-    /* Badge */
-  }
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-200 text-xs font-semibold backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Surat Food Recovery Network · Live in 12 Localities</span>
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FAF7F2]/10 border border-[#FAF7F2]/20 text-[#FAF7F2] text-xs font-semibold backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-[#C85A32] animate-pulse" />
+            <span>Surat Food Recovery Network · Operational Across 12 Localities</span>
           </div>
 
-          {
-    /* Heading */
-  }
+          {/* Heading */}
           <div className="max-w-4xl mx-auto space-y-4">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15]">
               Connecting Surplus Food with{" "}
-              <span className="bg-gradient-to-r from-purple-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+              <span className="text-[#E07A5F]">
                 Surat Shelters & Communities
               </span>
             </h1>
-            <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Every day in Surat, wholesome surplus meals from restaurants, banquets, and bakeries are
-              matched with verified community kitchens and shelters before they expire.
+            <p className="text-base sm:text-lg text-[#D7CCC8] max-w-2xl mx-auto leading-relaxed font-normal">
+              Wholesome surplus meals from restaurants, banquets, and bakeries in Surat are
+              swiftly coordinated with verified community kitchens and shelters before expiry.
             </p>
           </div>
 
-          {
-    /* CTAs */
-  }
+          {/* CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
-    id="hero-apply-btn"
-    type="button"
-    onClick={onOpenApply}
-    className="px-6 py-3.5 text-sm font-bold text-slate-950 bg-gradient-to-r from-purple-300 to-fuchsia-300 hover:from-purple-200 hover:to-fuchsia-200 rounded-xl shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2 group"
-  >
+              id="hero-apply-btn"
+              type="button"
+              onClick={onOpenApply}
+              className="btn-terracotta px-6 py-3.5 text-sm flex items-center gap-2 group shadow-lg shadow-[#C85A32]/25"
+            >
               <span>Apply to Join Network</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
             <button
-    id="hero-sign-in-btn"
-    type="button"
-    onClick={onOpenLogin}
-    className="px-6 py-3.5 text-sm font-bold text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-xl backdrop-blur-sm transition-all"
-  >
+              id="hero-sign-in-btn"
+              type="button"
+              onClick={onOpenLogin}
+              className="px-6 py-3.5 text-sm font-bold text-[#FAF7F2] bg-[#5D4037]/80 hover:bg-[#5D4037] border border-[#795548] rounded-xl backdrop-blur-sm transition-all shadow-md"
+            >
               Sign In to Platform
             </button>
           </div>
 
-          {
-    /* Live Dynamic City Stats (Real Database Calculated) */
-  }
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-10">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-              <p className="text-2xl sm:text-3xl font-extrabold text-white">{outcomeMetrics.totalKgRecovered} <span className="text-sm font-normal text-purple-300">kg</span></p>
-              <p className="text-xs text-slate-400 mt-1 font-medium">Surplus Food Rescued</p>
+          {/* Demo Mode Prompt Banner */}
+          {demoMode && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onOpenDemo}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-xs text-[#FAF7F2] transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#E07A5F]" />
+                <span>Demo Mode Active: Press <kbd className="font-mono bg-white/20 px-1.5 py-0.5 rounded font-bold">Ctrl</kbd> to explore 25 Demo Accounts</span>
+              </button>
             </div>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-              <p className="text-2xl sm:text-3xl font-extrabold text-white">{outcomeMetrics.estimatedMealsSaved}</p>
-              <p className="text-xs text-slate-400 mt-1 font-medium">Nutritious Meals Served</p>
+          )}
+
+          {/* Live Dynamic City Stats (Real Database State) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8">
+            <div className="p-5 rounded-2xl bg-[#FAF7F2]/10 border border-[#FAF7F2]/15 backdrop-blur-md text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                {outcomeMetrics.totalKgRecovered} <span className="text-sm font-normal text-[#E07A5F]">kg</span>
+              </p>
+              <p className="text-xs text-[#D7CCC8] mt-1 font-medium">Surplus Food Rescued</p>
             </div>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-              <p className="text-2xl sm:text-3xl font-extrabold text-white">{outcomeMetrics.recoveryRate}%</p>
-              <p className="text-xs text-slate-400 mt-1 font-medium">Successful Recovery Rate</p>
+            <div className="p-5 rounded-2xl bg-[#FAF7F2]/10 border border-[#FAF7F2]/15 backdrop-blur-md text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                {outcomeMetrics.estimatedMealsSaved}
+              </p>
+              <p className="text-xs text-[#D7CCC8] mt-1 font-medium">Nutritious Meals Served</p>
             </div>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-center">
-              <p className="text-2xl sm:text-3xl font-extrabold text-white">{outcomeMetrics.estimatedCo2AvoidedKg} <span className="text-sm font-normal text-purple-300">kg</span></p>
-              <p className="text-xs text-slate-400 mt-1 font-medium">CO₂e Avoided</p>
+            <div className="p-5 rounded-2xl bg-[#FAF7F2]/10 border border-[#FAF7F2]/15 backdrop-blur-md text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                {outcomeMetrics.recoveryRate}%
+              </p>
+              <p className="text-xs text-[#D7CCC8] mt-1 font-medium">Successful Recovery Rate</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#FAF7F2]/10 border border-[#FAF7F2]/15 backdrop-blur-md text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                {outcomeMetrics.estimatedCo2AvoidedKg} <span className="text-sm font-normal text-[#E07A5F]">kg</span>
+              </p>
+              <p className="text-xs text-[#D7CCC8] mt-1 font-medium">CO₂e Avoided</p>
             </div>
           </div>
         </div>
       </section>
 
-      {
-    /* How It Works Section */
-  }
+      {/* How It Works Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs uppercase font-bold tracking-widest text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
-            Operational Workflow
+          <span className="text-xs uppercase font-bold tracking-widest text-[#C85A32] bg-[#C85A32]/10 px-3.5 py-1 rounded-full border border-[#C85A32]/20">
+            Operational Protocol
           </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-3">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#2C1810] mt-3">
             How Surplus Recovery Works in Surat
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2">
-            A fast, auditable coordination protocol designed for fresh cooked meals and food safety.
+          <p className="text-xs sm:text-sm text-[#5D4037] mt-2">
+            A fast, accountable coordination workflow engineered for food safety and transparent handoffs.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {
-    /* Step 1 */
-  }
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
-              1
+          {/* Step 1 */}
+          <div className="card-warm p-6 space-y-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-xl bg-[#FAF7F2] text-[#2C1810] border border-[#E7DCD5] flex items-center justify-center font-bold text-lg shadow-2xs">
+              <UtensilsCrossed className="w-5 h-5 text-[#C85A32]" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Donors Post Fresh Surplus</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <div>
+              <span className="text-[11px] font-bold text-[#C85A32] uppercase tracking-wider">Step 1</span>
+              <h3 className="text-base font-bold text-[#2C1810] mt-0.5">Donors Post Fresh Surplus</h3>
+            </div>
+            <p className="text-xs text-[#5D4037] leading-relaxed">
               Verified dining halls, banquets, and caterers in Vesu, Adajan, and Athwa list surplus meals with precise expiry countdowns and dietary info.
             </p>
           </div>
 
-          {
-    /* Step 2 */
-  }
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center font-bold text-lg">
-              2
+          {/* Step 2 */}
+          <div className="card-warm p-6 space-y-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-xl bg-[#FAF7F2] text-[#2C1810] border border-[#E7DCD5] flex items-center justify-center font-bold text-lg shadow-2xs">
+              <Building2 className="w-5 h-5 text-[#5D4037]" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Smart Match & Reservation</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Nearby registered NGOs receive instant recommendations matching their daily beneficiary capacity and food preferences, securing the batch with one click.
+            <div>
+              <span className="text-[11px] font-bold text-[#C85A32] uppercase tracking-wider">Step 2</span>
+              <h3 className="text-base font-bold text-[#2C1810] mt-0.5">Smart Match & Reservation</h3>
+            </div>
+            <p className="text-xs text-[#5D4037] leading-relaxed">
+              Nearby registered NGOs receive instant alerts matching their daily beneficiary capacity and food preferences, securing the batch with one click.
             </p>
           </div>
 
-          {
-    /* Step 3 */
-  }
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-              3
+          {/* Step 3 */}
+          <div className="card-warm p-6 space-y-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-xl bg-[#FAF7F2] text-[#2C1810] border border-[#E7DCD5] flex items-center justify-center font-bold text-lg shadow-2xs">
+              <ShieldCheck className="w-5 h-5 text-[#8D6E63]" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Cryptographic QR Verification</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Assigned couriers pick up the surplus and scan a tamper-proof single-use QR token at the donor loading bay, ensuring verified, traceable delivery.
+            <div>
+              <span className="text-[11px] font-bold text-[#C85A32] uppercase tracking-wider">Step 3</span>
+              <h3 className="text-base font-bold text-[#2C1810] mt-0.5">OTP or QR Handoff Verification</h3>
+            </div>
+            <p className="text-xs text-[#5D4037] leading-relaxed">
+              Assigned couriers verify surplus pickup using either secure single-use QR or an alternative cryptographic OTP, ensuring complete chain-of-custody.
             </p>
           </div>
         </div>
       </section>
 
-      {
-    /* Surat City Network Hubs */
-  }
-      <section className="bg-purple-900/5 py-16 px-4 sm:px-6 lg:px-8 border-y border-purple-100">
+      {/* Surat City Network Hubs */}
+      <section className="bg-[#F5EFEB] py-16 px-4 sm:px-6 lg:px-8 border-y border-[#E7DCD5]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-3 max-w-lg">
-            <div className="flex items-center gap-2 text-purple-800 font-semibold text-xs">
+            <div className="flex items-center gap-2 text-[#C85A32] font-semibold text-xs">
               <MapPin className="w-4 h-4" />
               <span>Surat Metropolitan Coverage</span>
             </div>
-            <h3 className="text-2xl font-bold text-slate-900">Active Recovery Localities</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Our decentralized volunteer courier cell operates with under 30-minute response times across major Surat commercial and residential corridors.
+            <h3 className="text-2xl font-bold text-[#2C1810]">Active Recovery Localities</h3>
+            <p className="text-xs text-[#5D4037] leading-relaxed">
+              Our decentralized volunteer courier network operates with under 30-minute dispatch times across major Surat commercial and residential sectors.
             </p>
             <div className="flex flex-wrap gap-2 pt-2">
-              {["Vesu", "Adajan", "Athwa Lines", "Varachha", "Katargam", "Udhna", "Piplod", "Pal", "City Light", "Nanpura"].map((loc) => <span key={loc} className="px-2.5 py-1 rounded-lg bg-white border border-purple-200/80 text-purple-900 text-xs font-medium">
+              {["Vesu", "Adajan", "Athwa Lines", "Varachha", "Katargam", "Udhna", "Piplod", "Pal", "City Light", "Nanpura"].map((loc) => (
+                <span
+                  key={loc}
+                  className="px-2.5 py-1 rounded-lg bg-white border border-[#E7DCD5] text-[#2C1810] text-xs font-medium shadow-2xs"
+                >
                   {loc}
-                </span>)}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white border border-purple-200/80 shadow-sm max-w-sm w-full space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-xs font-semibold text-slate-700">Average Transit Speed</span>
-              <span className="text-xs font-bold text-emerald-600">{outcomeMetrics.averageRecoverySpeedHours} hrs</span>
+          <div className="p-6 rounded-2xl bg-white border border-[#E7DCD5] shadow-xs max-w-sm w-full space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E7DCD5] pb-3">
+              <span className="text-xs font-semibold text-[#5D4037]">Average Recovery Speed</span>
+              <span className="text-xs font-bold text-[#2C1810]">{outcomeMetrics.averageRecoverySpeedHours} hrs</span>
             </div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-xs font-semibold text-slate-700">Punctuality Score</span>
-              <span className="text-xs font-bold text-purple-700">{outcomeMetrics.punctualityScoreAvg}%</span>
+            <div className="flex items-center justify-between border-b border-[#E7DCD5] pb-3">
+              <span className="text-xs font-semibold text-[#5D4037]">Punctuality Score</span>
+              <span className="text-xs font-bold text-[#C85A32]">{outcomeMetrics.punctualityScoreAvg}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700">Spoilage Avoidance</span>
-              <span className="text-xs font-bold text-emerald-600">{outcomeMetrics.spoilageAvoidanceRate}%</span>
+              <span className="text-xs font-semibold text-[#5D4037]">Spoilage Avoidance</span>
+              <span className="text-xs font-bold text-[#5D4037]">{outcomeMetrics.spoilageAvoidanceRate}%</span>
             </div>
           </div>
         </div>
       </section>
 
-      {
-    /* Footer */
-  }
-      <footer className="mt-auto py-8 bg-slate-950 text-slate-400 text-xs border-t border-slate-800">
+      {/* Public Landing Footer */}
+      <footer className="mt-auto py-8 bg-[#2C1810] text-[#D7CCC8] text-xs border-t border-[#3D2319]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <HeartHandshake className="w-4 h-4 text-purple-400" />
+            <HeartHandshake className="w-4 h-4 text-[#C85A32]" />
             <span className="font-semibold text-white">NourishNet Surat</span>
-            <span>· Community Food Rescue Platform</span>
+            <span>· Community Surplus Food Recovery & Redistribution Network</span>
           </div>
-          <p>© 2026 NourishNet. Supporting food security and zero-waste initiatives.</p>
+          <p>© 2026 NourishNet Surat. Built for zero-waste communities.</p>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
-export {
-  LandingPage
-};
+
+export { LandingPage };

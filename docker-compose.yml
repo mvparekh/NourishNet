@@ -22,3 +22,4 @@ services:
 networks:
   nourishnet_network:
     driver: bridge
+

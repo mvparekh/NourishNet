@@ -49,89 +49,77 @@ const SuratRescueMap = ({
       setSelectedNode(null);
     }
   };
-  return <div className={`relative bg-slate-900 rounded-2xl border border-slate-800 text-white overflow-hidden shadow-md flex flex-col ${compact ? "h-[360px]" : "h-[520px]"}`}>
-      {
-    /* Top Map Control Bar */
-  }
-      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs">
+  return <div className={`relative bg-[#1A0F0A] rounded-2xl border border-[#3D2319] text-[#FAF7F2] overflow-hidden shadow-md flex flex-col ${compact ? "h-[360px]" : "h-[520px]"}`}>
+      {/* Top Map Control Bar */}
+      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 bg-[#2C1810]/90 backdrop-blur-md p-2.5 rounded-xl border border-[#5D4037] text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#C85A32] animate-pulse" />
           <span className="font-bold text-white tracking-wide flex items-center gap-1">
-            <Navigation className="w-3.5 h-3.5 text-purple-400" />
+            <Navigation className="w-3.5 h-3.5 text-[#E07A5F]" />
             <span>Surat Live Relief Radar</span>
           </span>
-          <span className="text-[10px] text-slate-400 hidden sm:inline">
+          <span className="text-[10px] text-[#D7CCC8] hidden sm:inline">
             · {availableListings.length} Surplus · {activePickups.length} In-Transit
           </span>
         </div>
 
-        {
-    /* Filter Pills */
-  }
-        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+        {/* Filter Pills */}
+        <div className="flex items-center gap-1 bg-[#1A0F0A] p-1 rounded-lg border border-[#3D2319]">
           <button
-    type="button"
-    onClick={() => setActiveFilter("ALL")}
-    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${activeFilter === "ALL" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white"}`}
-  >
+            type="button"
+            onClick={() => setActiveFilter("ALL")}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${activeFilter === "ALL" ? "bg-[#C85A32] text-white" : "text-[#D7CCC8] hover:text-white"}`}
+          >
             All
           </button>
           <button
-    type="button"
-    onClick={() => setActiveFilter("SURPLUS")}
-    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "SURPLUS" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white"}`}
-  >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            type="button"
+            onClick={() => setActiveFilter("SURPLUS")}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "SURPLUS" ? "bg-[#C85A32] text-white" : "text-[#D7CCC8] hover:text-white"}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F]" />
             <span>Surplus ({availableListings.length})</span>
           </button>
           <button
-    type="button"
-    onClick={() => setActiveFilter("NGOS")}
-    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "NGOS" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white"}`}
-  >
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            type="button"
+            onClick={() => setActiveFilter("NGOS")}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "NGOS" ? "bg-[#C85A32] text-white" : "text-[#D7CCC8] hover:text-white"}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D7CCC8]" />
             <span>NGOs ({ngoUsers.length})</span>
           </button>
           <button
-    type="button"
-    onClick={() => setActiveFilter("COURIERS")}
-    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "COURIERS" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white"}`}
-  >
+            type="button"
+            onClick={() => setActiveFilter("COURIERS")}
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all flex items-center gap-1 ${activeFilter === "COURIERS" ? "bg-[#C85A32] text-white" : "text-[#D7CCC8] hover:text-white"}`}
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>Couriers ({activePickups.length})</span>
           </button>
         </div>
       </div>
 
-      {
-    /* SVG Canvas Map */
-  }
+      {/* SVG Canvas Map */}
       <div className="flex-1 w-full h-full relative cursor-crosshair">
         <svg
-    viewBox="0 0 800 600"
-    className="w-full h-full object-cover"
-    preserveAspectRatio="xMidYMid slice"
-  >
+          viewBox="0 0 800 600"
+          className="w-full h-full object-cover"
+          preserveAspectRatio="xMidYMid slice"
+        >
           <defs>
-            {
-    /* Grid Pattern */
-  }
+            {/* Grid Pattern */}
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.8" />
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2C1810" strokeWidth="0.8" />
             </pattern>
-            {
-    /* Pulsing glow */
-  }
+            {/* Pulsing glow */}
             <radialGradient id="pulseGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+              <stop offset="0%" stopColor="#C85A32" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#C85A32" stopOpacity="0" />
             </radialGradient>
           </defs>
 
-          {
-    /* Background Grid */
-  }
-          <rect width="800" height="600" fill="#0b1120" />
+          {/* Background Grid */}
+          <rect width="800" height="600" fill="#150C07" />
           <rect width="800" height="600" fill="url(#grid)" />
 
           {
@@ -341,93 +329,99 @@ const SuratRescueMap = ({
   })}
         </svg>
 
-        {
-    /* Selected Node Popover Card */
-  }
-        {selectedNode && <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-md z-20 bg-slate-950/95 backdrop-blur-md p-4 rounded-2xl border border-purple-500/40 shadow-2xl text-xs space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
+        {/* Selected Node Popover Card */}
+        {selectedNode && (
+          <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-md z-20 bg-[#2C1810]/95 backdrop-blur-md p-4 rounded-2xl border border-[#C85A32]/40 shadow-2xl text-xs space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/30 text-purple-300 border border-purple-400/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#C85A32]/20 text-[#FAF7F2] border border-[#C85A32]/40">
                   {selectedNode.type === "LISTING" ? "Surplus Batch" : selectedNode.type === "NGO" ? "NGO Shelter" : "Courier In-Transit"}
                 </span>
                 {selectedNode.type === "LISTING" && <StatusBadge status={selectedNode.data.status} />}
               </div>
 
               <button
-    type="button"
-    onClick={() => setSelectedNode(null)}
-    className="text-slate-400 hover:text-white p-1"
-  >
+                type="button"
+                onClick={() => setSelectedNode(null)}
+                className="text-[#8D6E63] hover:text-white p-1"
+              >
                 ✕
               </button>
             </div>
 
-            {selectedNode.type === "LISTING" && <>
+            {selectedNode.type === "LISTING" && (
+              <>
                 <div>
                   <h4 className="text-sm font-bold text-white">{selectedNode.data.title}</h4>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-[#E7DCD5] text-[11px]">
                     Donor: {selectedNode.data.donorName} ({selectedNode.data.donorLocality}, Surat)
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 bg-[#1A0F0A] p-2.5 rounded-xl border border-[#5D4037]/40 text-[11px]">
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Portion Size</span>
-                    <span className="font-bold text-purple-300">
+                    <span className="text-[#8D6E63] block text-[10px]">Portion Size</span>
+                    <span className="font-bold text-[#C85A32]">
                       {selectedNode.data.quantity} {selectedNode.data.unit.toLowerCase()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Dietary / Prep</span>
+                    <span className="text-[#8D6E63] block text-[10px]">Dietary / Prep</span>
                     <span className="font-bold text-emerald-400">
                       {selectedNode.data.dietaryType?.replace("_", " ") || "Veg"}
                     </span>
                   </div>
                 </div>
 
-                {currentUser?.role === "NGO" && <button
-    type="button"
-    onClick={() => handleReserveQuick(selectedNode.data)}
-    className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
-  >
+                {currentUser?.role === "NGO" && (
+                  <button
+                    type="button"
+                    onClick={() => handleReserveQuick(selectedNode.data)}
+                    className="w-full py-2 bg-[#C85A32] hover:bg-[#B04A24] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                  >
                     <span>Reserve Batch for Shelter</span>
                     <ChevronRight className="w-3.5 h-3.5" />
-                  </button>}
-              </>}
+                  </button>
+                )}
+              </>
+            )}
 
-            {selectedNode.type === "NGO" && <div>
+            {selectedNode.type === "NGO" && (
+              <div>
                 <h4 className="text-sm font-bold text-white">{selectedNode.data.fullName}</h4>
-                <p className="text-slate-400 text-[11px]">
+                <p className="text-[#E7DCD5] text-[11px]">
                   Locality: {selectedNode.data.locality}, Surat · Capacity: {selectedNode.data.capacityPerDay || 250} meals/day
                 </p>
-                <p className="text-slate-500 text-[10px] mt-1">
+                <p className="text-[#8D6E63] text-[10px] mt-1">
                   Active shelter hub receiving verified surplus dispatches.
                 </p>
-              </div>}
+              </div>
+            )}
 
-            {selectedNode.type === "COURIER" && <div>
+            {selectedNode.type === "COURIER" && (
+              <div>
                 <h4 className="text-sm font-bold text-white">Relief Trip in Transit</h4>
-                <p className="text-slate-400 text-[11px]">
+                <p className="text-[#E7DCD5] text-[11px]">
                   Delivering: {selectedNode.data.listing.title} ({selectedNode.data.res.requestedQuantity} portions)
                 </p>
-                <p className="text-purple-300 text-[11px] mt-0.5">
+                <p className="text-[#C85A32] text-[11px] mt-0.5">
                   Origin: {selectedNode.data.listing.donorLocality} → Destination: {selectedNode.data.res.ngoName}
                 </p>
-              </div>}
-          </div>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {
-    /* Map Footer Indicator */
-  }
-      <div className="px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+      {/* Map Footer Indicator */}
+      <div className="px-4 py-2 bg-[#1A0F0A] border-t border-[#2C1810] flex items-center justify-between text-[11px] text-[#E7DCD5]">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            <span className="w-2 h-2 rounded-full bg-[#C85A32]" />
             <span>Surplus Batch</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            <span className="w-2 h-2 rounded-full bg-[#5D4037]" />
             <span>NGO Shelter</span>
           </span>
           <span className="flex items-center gap-1">
@@ -435,7 +429,7 @@ const SuratRescueMap = ({
             <span>Active Courier</span>
           </span>
         </div>
-        <span className="hidden sm:inline text-slate-500">Surat Metropolitan Area</span>
+        <span className="hidden sm:inline text-[#8D6E63]">Surat Metropolitan Area</span>
       </div>
     </div>;
 };
