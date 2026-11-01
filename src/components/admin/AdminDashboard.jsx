@@ -13,7 +13,10 @@ import {
   ShieldAlert,
   Trash2,
   Copy,
-  Check
+  Check,
+  Truck,
+  Clock,
+  Package
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { NeedsAttentionBanner } from "../dashboard/NeedsAttentionBanner";
@@ -21,6 +24,7 @@ import { WidgetCard } from "../dashboard/WidgetCard";
 import { CustomizeDashboardModal } from "../dashboard/CustomizeDashboardModal";
 import { ContextualHelpModal } from "../dashboard/ContextualHelpModal";
 import { SuratRescueMap } from "../map/SuratRescueMap";
+import { StatusBadge } from "../common/StatusBadge";
 import { useDashboardConfig } from "../../hooks/useDashboardConfig";
 import { ALL_WIDGETS } from "../../services/dashboardConfig";
 
@@ -34,6 +38,9 @@ const AdminDashboard = () => {
     users,
     toggleUserSuspension,
     foodListings,
+    reservations = [],
+    pickups = [],
+    assignVolunteerToPickup,
     forceRemoveListing,
     moderationLogs,
     outcomeMetrics
@@ -45,10 +52,23 @@ const AdminDashboard = () => {
     toggleCollapse
   } = useDashboardConfig(currentUser);
 
-  const [activeTab, setActiveTab] = useState("DASHBOARD");
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const pending = sessionStorage.getItem("nourishnet_pending_tab");
+      if (pending) {
+        sessionStorage.removeItem("nourishnet_pending_tab");
+        return pending;
+      }
+    } catch {}
+    return "DASHBOARD";
+  });
   const [adminNotes, setAdminNotes] = useState({});
   const [incidentResolutionNotes, setIncidentResolutionNotes] = useState({});
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
+  const [orderFilter, setOrderFilter] = useState("ALL");
+  const [assigningOrderId, setAssigningOrderId] = useState(null);
+  const [selectedVolForOrder, setSelectedVolForOrder] = useState("");
   const [issuedTokens, setIssuedTokens] = useState({});
   const [copiedTokenId, setCopiedTokenId] = useState(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
@@ -73,6 +93,40 @@ const AdminDashboard = () => {
       (u.locality && u.locality.toLowerCase().includes(q))
     );
   });
+
+  const activeVolunteers = users.filter((u) => u.role === "VOLUNTEER" && u.isActive);
+
+  const filteredOrders = reservations.filter((r) => {
+    const listing = foodListings.find((l) => l.id === r.listingId);
+    if (orderFilter === "UNASSIGNED" && r.assignedVolunteerId) return false;
+    if (orderFilter === "ASSIGNED" && (r.status !== "ASSIGNED" && r.status !== "VOLUNTEER_ASSIGNED")) return false;
+    if (orderFilter === "IN_TRANSIT" && (r.status !== "IN_TRANSIT" && r.status !== "PICKED_UP" && r.status !== "PICKUP_STARTED" && r.status !== "VOLUNTEER_EN_ROUTE")) return false;
+    if (orderFilter === "COMPLETED" && r.status !== "COMPLETED") return false;
+    if (orderFilter === "CANCELLED" && r.status !== "CANCELLED") return false;
+    if (orderFilter === "OVERDUE") {
+      const isUnassigned = !r.assignedVolunteerId && r.status !== "COMPLETED" && r.status !== "CANCELLED";
+      const isExpired = listing && listing.expiresAt && listing.expiresAt <= new Date().toISOString() && r.status !== "COMPLETED";
+      if (!isUnassigned && !isExpired) return false;
+    }
+
+    if (!orderSearchTerm) return true;
+    const q = orderSearchTerm.toLowerCase();
+    return (
+      r.id.toLowerCase().includes(q) ||
+      (r.ngoName && r.ngoName.toLowerCase().includes(q)) ||
+      (r.assignedVolunteerName && r.assignedVolunteerName.toLowerCase().includes(q)) ||
+      (listing?.title && listing.title.toLowerCase().includes(q)) ||
+      (listing?.donorName && listing.donorName.toLowerCase().includes(q)) ||
+      (r.status && r.status.toLowerCase().includes(q))
+    );
+  });
+
+  const handleAdminAssignVolunteer = async (orderId) => {
+    if (!selectedVolForOrder) return;
+    await assignVolunteerToPickup(orderId, selectedVolForOrder);
+    setAssigningOrderId(null);
+    setSelectedVolForOrder("");
+  };
 
   const getWidgetDef = (id) => ALL_WIDGETS.find((w) => w.id === id);
   const shouldRenderWidget = (widgetId) => {
@@ -152,6 +206,20 @@ const AdminDashboard = () => {
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#C85A32]" />
             <span>Dashboard Overview</span>
+          </button>
+
+          <button
+            type="button"
+            id="admin-tab-orders"
+            onClick={() => setActiveTab("ORDERS")}
+            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+              activeTab === "ORDERS"
+                ? "bg-white text-[#2C1810] shadow-xs ring-1 ring-[#C85A32]"
+                : "text-[#5D4037] hover:text-[#2C1810]"
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5 text-[#C85A32]" />
+            <span>Orders & Recoveries ({reservations.length})</span>
           </button>
 
           <button
@@ -372,6 +440,213 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Tab: Real-Time Operational Orders & Deliveries */}
+      {activeTab === "ORDERS" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-[#2C1810]">
+                Surat Surplus Recoveries & Logistics Dispatch ({filteredOrders.length})
+              </h3>
+              <p className="text-xs text-[#8D6E63]">
+                Authoritative cross-dashboard operational view of all active claims, delivery partners, and delivery handoffs.
+              </p>
+            </div>
+            <div className="relative max-w-xs w-full">
+              <Search className="w-3.5 h-3.5 text-[#8D6E63] absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={orderSearchTerm}
+                onChange={(e) => setOrderSearchTerm(e.target.value)}
+                placeholder="Search order ID, item, NGO, delivery partner..."
+                className="input-warm w-full pl-9 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {[
+              { id: "ALL", label: `All Orders (${reservations.length})` },
+              { id: "UNASSIGNED", label: `Unassigned (${reservations.filter((r) => !r.assignedVolunteerId && r.status !== "COMPLETED" && r.status !== "CANCELLED").length})` },
+              { id: "ASSIGNED", label: `Assigned (${reservations.filter((r) => r.status === "ASSIGNED" || r.status === "VOLUNTEER_ASSIGNED").length})` },
+              { id: "IN_TRANSIT", label: `In Transit (${reservations.filter((r) => r.status === "IN_TRANSIT" || r.status === "PICKED_UP" || r.status === "PICKUP_STARTED" || r.status === "VOLUNTEER_EN_ROUTE").length})` },
+              { id: "COMPLETED", label: `Completed (${reservations.filter((r) => r.status === "COMPLETED").length})` },
+              { id: "CANCELLED", label: `Cancelled (${reservations.filter((r) => r.status === "CANCELLED").length})` },
+              { id: "OVERDUE", label: `Needs Attention` }
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setOrderFilter(f.id)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                  orderFilter === f.id
+                    ? "bg-[#C85A32] text-white border-[#C85A32] shadow-xs"
+                    : "bg-[#F5EFEB] text-[#5D4037] border-[#E7DCD5] hover:bg-[#EFE5DF]"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Orders Grid / Cards */}
+          {filteredOrders.length === 0 ? (
+            <div className="card-warm p-8 text-center space-y-2">
+              <Package className="w-8 h-8 text-[#C85A32] mx-auto opacity-70" />
+              <h4 className="font-bold text-[#2C1810] text-sm">No Recoveries Match Criteria</h4>
+              <p className="text-xs text-[#8D6E63]">
+                Try adjusting your search query or selecting a different status filter.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredOrders.map((res) => {
+                const listing = foodListings.find((l) => l.id === res.listingId);
+                const pickup = pickups.find((p) => p.reservationId === res.id);
+                const isUnassigned = !res.assignedVolunteerId && res.status !== "COMPLETED" && res.status !== "CANCELLED";
+                const isOverdue = isUnassigned && (Date.now() - new Date(res.createdAt).getTime() > 30 * 60 * 1000);
+                const latestStep = res.timeline && res.timeline.length > 0 ? res.timeline[res.timeline.length - 1] : null;
+
+                return (
+                  <div
+                    key={res.id}
+                    className="card-warm p-4 space-y-3 text-xs border border-[#E7DCD5] hover:border-[#C85A32]/40 transition-all"
+                  >
+                    {/* Header: ID, Status, Timestamps */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E7DCD5]/60 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#2C1810] text-[#FAF7F2]">
+                          {res.id}
+                        </span>
+                        <StatusBadge status={res.status} />
+                        {isOverdue && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">
+                            <Clock className="w-3 h-3 text-rose-600" />
+                            Overdue (&gt;30m Unassigned)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-[#8D6E63] flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#C85A32]" />
+                        <span>Created: {new Date(res.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span>· Updated: {new Date(res.updatedAt || res.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                    </div>
+
+                    {/* Order Details Body */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Column 1: Food & Donor */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-bold text-[#8D6E63] uppercase tracking-wider">Food Item & Donor</p>
+                        <p className="font-bold text-sm text-[#2C1810]">
+                          {listing?.title || "Food Surplus"}
+                        </p>
+                        <p className="text-xs text-[#5D4037]">
+                          <strong>{res.requestedQuantity}</strong> {listing?.unit || "Plates"} · {listing?.donorName || "Donor"} ({listing?.donorLocality || "Surat"})
+                        </p>
+                      </div>
+
+                      {/* Column 2: Recipient NGO */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-bold text-[#8D6E63] uppercase tracking-wider">Recipient Shelter</p>
+                        <p className="font-bold text-sm text-[#2C1810]">
+                          {res.ngoName}
+                        </p>
+                        <p className="text-xs text-[#8D6E63]">
+                          Contact: {res.ngoPhone || "Surat Relief Unit"}
+                        </p>
+                      </div>
+
+                      {/* Column 3: Logistics & Volunteer Assignment */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-bold text-[#8D6E63] uppercase tracking-wider">Assigned Delivery Partner</p>
+                        {res.assignedVolunteerName ? (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-[#2C1810] flex items-center gap-1">
+                                <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                                {res.assignedVolunteerName}
+                              </p>
+                              <p className="text-[11px] text-[#8D6E63]">
+                                {res.assignedVolunteerPhone || "Active Delivery Partner"}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Dispatched
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-rose-700 font-bold flex items-center gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              Delivery Partner Not Assigned
+                            </p>
+                            {assigningOrderId === res.id ? (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <select
+                                  value={selectedVolForOrder}
+                                  onChange={(e) => setSelectedVolForOrder(e.target.value)}
+                                  className="input-warm text-xs py-1 px-2 flex-1"
+                                >
+                                  <option value="">Select active delivery partner...</option>
+                                  {activeVolunteers.map((v) => (
+                                    <option key={v.id} value={v.id}>
+                                      {v.fullName} ({v.locality || "Surat"})
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdminAssignVolunteer(res.id)}
+                                  disabled={!selectedVolForOrder}
+                                  className="btn-terracotta text-xs px-2.5 py-1 whitespace-nowrap"
+                                >
+                                  Assign
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setAssigningOrderId(null)}
+                                  className="btn-secondary text-xs px-2 py-1"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAssigningOrderId(res.id);
+                                  setSelectedVolForOrder(activeVolunteers[0]?.id || "");
+                                }}
+                                className="btn-terracotta text-xs px-2.5 py-1 flex items-center gap-1"
+                              >
+                                <span>+ Assign Delivery Partner</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer: Latest Timeline Event */}
+                    {latestStep && (
+                      <div className="pt-2 border-t border-[#E7DCD5]/40 flex items-center justify-between text-[11px] text-[#8D6E63]">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Latest Update: <strong className="text-[#2C1810]">{latestStep.label}</strong></span>
+                        </span>
+                        <span>Actor: {latestStep.actorName} ({latestStep.actorRole})</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tab: Applications Queue */}
       {activeTab === "APPLICATIONS" && (
         <div className="space-y-4">
@@ -525,43 +800,92 @@ const AdminDashboard = () => {
           </div>
 
           <div className="space-y-2">
-            {filteredUsers.map((u) => (
-              <div
-                key={u.id}
-                className="card-warm p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-[#2C1810]">{u.fullName}</h4>
-                    <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-[#F5EFEB] text-[#5D4037] border border-[#E7DCD5]">
-                      {u.role}
-                    </span>
-                    {!u.isActive && (
-                      <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-rose-100 text-rose-800">
-                        Suspended
+            {filteredUsers.map((u) => {
+              const userStats = (() => {
+                if (u.role === "DONOR") {
+                  const userListings = foodListings.filter((l) => l.donorId === u.id);
+                  const totalKg = userListings.reduce((sum, l) => sum + (l.quantityKg || l.quantity || 0), 0);
+                  const completed = userListings.filter((l) => l.status === "COMPLETED").length;
+                  return [
+                    { label: "Listings", val: userListings.length },
+                    { label: "Donated", val: `${Math.round(totalKg)} kg` },
+                    { label: "Completed", val: completed }
+                  ];
+                }
+                if (u.role === "RECEIVER" || u.role === "NGO") {
+                  const userRes = reservations.filter((r) => r.ngoId === u.id || r.userId === u.id);
+                  const completed = userRes.filter((r) => r.status === "COMPLETED" || r.status === "DELIVERED").length;
+                  const active = userRes.filter((r) => ["CONFIRMED", "IN_TRANSIT", "ASSIGNED"].includes(r.status)).length;
+                  return [
+                    { label: "Claims", val: userRes.length },
+                    { label: "Received", val: completed },
+                    { label: "Active", val: active }
+                  ];
+                }
+                if (u.role === "VOLUNTEER") {
+                  const userPickups = pickups.filter((p) => p.assignedVolunteerId === u.id);
+                  const completed = userPickups.filter((p) => p.status === "COMPLETED" || p.status === "DELIVERED").length;
+                  const active = userPickups.filter((p) => ["ASSIGNED", "PICKED_UP", "IN_TRANSIT"].includes(p.status)).length;
+                  return [
+                    { label: "Tasks", val: userPickups.length },
+                    { label: "Delivered", val: completed },
+                    { label: "Active", val: active }
+                  ];
+                }
+                return [];
+              })();
+
+              return (
+                <div
+                  key={u.id}
+                  className="card-warm p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-[#2C1810]">{u.fullName}</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-[#F5EFEB] text-[#5D4037] border border-[#E7DCD5]">
+                        {u.role}
                       </span>
+                      {!u.isActive && (
+                        <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-rose-100 text-rose-800">
+                          Suspended
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[#8D6E63] text-[11px]">
+                      {u.email} · {u.locality || "Surat"} · {u.phone || "No phone"}
+                    </p>
+                    {userStats.length > 0 && (
+                      <div className="flex items-center gap-2 pt-1">
+                        {userStats.map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium"
+                          >
+                            <span className="text-emerald-600 font-normal">{s.label}:</span>
+                            <span className="font-bold">{s.val}</span>
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="text-[#8D6E63] text-[11px] mt-0.5">
-                    {u.email} · {u.locality || "Surat"} · {u.phone || "No phone"}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleUserSuspension(u.id)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                      u.isActive
-                        ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                    }`}
-                  >
-                    {u.isActive ? "Suspend User" : "Activate User"}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleUserSuspension(u.id)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                        u.isActive
+                          ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                      }`}
+                    >
+                      {u.isActive ? "Suspend User" : "Activate User"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

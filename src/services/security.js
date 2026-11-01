@@ -303,19 +303,27 @@ function getSafeLocationInfo(listing, currentUser, activeReservation) {
   };
 }
 function generateCryptographicOtp() {
-  const code = Math.floor(1e5 + Math.random() * 9e5).toString();
+  let num = 0;
+  if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+    const arr = new Uint32Array(1);
+    window.crypto.getRandomValues(arr);
+    num = 100000 + (arr[0] % 900000);
+  } else {
+    num = Math.floor(100000 + Math.random() * 900000);
+  }
+  const code = num.toString();
   const expiresAt = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
   return { code, expiresAt };
 }
 function verifyOtpCode(otpInput, pickup, reservation, listing, currentUser) {
   const checks = [];
   const cleanInput = otpInput.trim().replace(/\D/g, "");
-  const formatOk = cleanInput.length === 6;
+  const formatOk = cleanInput.length === 4 || cleanInput.length === 6;
   checks.push({
     step: 1,
-    name: "6-Digit OTP Format Valid",
+    name: "OTP Format Valid (4 or 6 digits)",
     passed: formatOk,
-    message: formatOk ? "6-digit numeric OTP structure confirmed." : "OTP must be exactly 6 numeric digits."
+    message: formatOk ? `${cleanInput.length}-digit numeric OTP structure confirmed.` : "OTP must be 4 or 6 numeric digits."
   });
   if (!formatOk) {
     return {
@@ -323,7 +331,7 @@ function verifyOtpCode(otpInput, pickup, reservation, listing, currentUser) {
       httpStatus: 400,
       method: "OTP",
       errorCode: "INVALID_OTP_FORMAT",
-      errorMessage: "Invalid OTP length. Enter the 6-digit code shown by the other participant.",
+      errorMessage: "Invalid OTP length. Enter the 4 or 6-digit code shown by the other participant.",
       checks
     };
   }

@@ -25,21 +25,23 @@ const AppProvider = ({ children }) => {
           ApiService.fetchState().catch(() => null),
           ApiService.getConfig().catch(() => null)
         ]);
-        if (isMounted) {
+        if (isMounted && serverState) {
           setStore((prev) => ({
             ...prev,
             demoMode: serverConfig?.demoMode !== undefined
               ? serverConfig.demoMode
               : (serverState?.demoMode !== undefined ? serverState.demoMode : (import.meta.env.VITE_DEMO_MODE !== 'false')),
-            users: serverState?.users && serverState.users.length > 0 ? serverState.users : prev.users,
-            organizations: serverState?.organizations || prev.organizations,
-            foodListings: serverState?.foodListings || prev.foodListings,
-            reservations: serverState?.reservations || prev.reservations,
-            pickups: serverState?.pickups || prev.pickups,
-            joinApplications: serverState?.joinApplications || prev.joinApplications,
-            issueReports: serverState?.issueReports || prev.issueReports,
-            moderationLogs: serverState?.moderationLogs || prev.moderationLogs,
-            recoveryMessages: serverState?.recoveryMessages || prev.recoveryMessages
+            users: serverState.users && serverState.users.length > 0 ? serverState.users : prev.users,
+            organizations: serverState.organizations || prev.organizations,
+            foodListings: serverState.foodListings || prev.foodListings,
+            reservations: serverState.reservations || prev.reservations,
+            pickups: serverState.pickups || prev.pickups,
+            joinApplications: serverState.joinApplications || prev.joinApplications,
+            issueReports: serverState.issueReports || prev.issueReports,
+            feedbacks: serverState.feedbacks || prev.feedbacks,
+            moderationLogs: serverState.moderationLogs || prev.moderationLogs,
+            recoveryMessages: serverState.recoveryMessages || prev.recoveryMessages,
+            notifications: serverState.notifications || prev.notifications,
           }));
         }
         const meRes = await ApiService.getMe().catch(() => null);
@@ -50,7 +52,7 @@ const AppProvider = ({ children }) => {
       }
     }
     syncBackendState();
-    const intervalId = setInterval(syncBackendState, 6e3);
+    const intervalId = setInterval(syncBackendState, 3e3);
     return () => {
       isMounted = false;
       clearInterval(intervalId);
@@ -503,60 +505,27 @@ const AppProvider = ({ children }) => {
     [currentUser, store.foodListings]
   );
   const assignVolunteerToPickup = useCallback(
-    (reservationId, volunteerId) => {
-      const vol = store.users.find((u) => u.id === volunteerId);
-      if (!vol) return { success: false, error: "Volunteer not found" };
-      const res = store.reservations.find((r) => r.id === reservationId);
-      if (!res) return { success: false, error: "Reservation not found" };
-      const listing = store.foodListings.find((l) => l.id === res.listingId);
-      const existingPickup = store.pickups.find((p) => p.reservationId === reservationId);
-      const updatedTimeline = [
-        ...res.timeline,
-        {
-          step: "ASSIGNED",
-          label: `Assigned courier ${vol.fullName}`,
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          actorName: currentUser?.fullName || "NGO Dispatcher",
-          actorRole: "NGO"
+    async (reservationId, volunteerId) => {
+      try {
+        const res = await ApiService.assignVolunteer(reservationId, volunteerId);
+        if (res.success && res.reservation) {
+          setStore((prev) => ({
+            ...prev,
+            reservations: prev.reservations.map((r) =>
+              r.id === res.reservation.id ? res.reservation : r
+            ),
+            pickups: prev.pickups.map((p) =>
+              p.reservationId === res.reservation.id ? (res.pickup || p) : p
+            )
+          }));
+          return { success: true, reservation: res.reservation, pickup: res.pickup };
         }
-      ];
-      let updatedQrToken = existingPickup?.qrToken;
-      if (listing && existingPickup) {
-        const freshQr = generateSignedQrToken(res, existingPickup.id, listing, vol.id);
-        updatedQrToken = freshQr.tokenString;
+        return { success: false, error: res.error || "Assignment failed" };
+      } catch (err) {
+        return { success: false, error: err.message || "Failed to assign volunteer" };
       }
-      setStore((prev) => ({
-        ...prev,
-        reservations: prev.reservations.map(
-          (r) => r.id === reservationId ? {
-            ...r,
-            status: "VOLUNTEER_ASSIGNED",
-            assignedVolunteerId: vol.id,
-            assignedVolunteerName: vol.fullName,
-            assignedVolunteerPhone: vol.phone,
-            timeline: updatedTimeline,
-            updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-          } : r
-        ),
-        pickups: prev.pickups.map(
-          (p) => p.reservationId === reservationId ? {
-            ...p,
-            volunteerId: vol.id,
-            status: "ASSIGNED",
-            qrToken: updatedQrToken || p.qrToken,
-            pickupNotes: `Assigned to ${vol.fullName}. Dispatch in progress.`
-          } : p
-        )
-      }));
-      sendNotification(
-        vol.id,
-        "New Pickup Dispatch Assigned",
-        `You have been assigned to pick up surplus at ${listing?.donorLocality || "Surat"}. Check your volunteer dashboard.`,
-        "ASSIGNMENT"
-      );
-      return { success: true };
     },
-    [currentUser, store.users, store.reservations, store.foodListings, store.pickups, sendNotification]
+    []
   );
   const updatePickupStatus = useCallback((pickupId, status, notes) => {
     setStore((prev) => ({
@@ -729,7 +698,7 @@ const AppProvider = ({ children }) => {
     [currentUser, store.reservations]
   );
   const verifyQrCode = useCallback(
-    (tokenString) => {
+    async (tokenString, pickupIdParam) => {
       if (!currentUser) {
         return {
           success: false,
@@ -739,98 +708,53 @@ const AppProvider = ({ children }) => {
           checks: []
         };
       }
-      const consumedSet = new Set(store.consumedNonces);
-      const report = verifyQrToken(tokenString, consumedSet, store.reservations, store.pickups, store.foodListings, currentUser);
-      if (report.success && report.payload) {
-        const p = report.payload;
-        const targetRes = store.reservations.find((r) => r.id === p.reservationId);
-        const targetListing = store.foodListings.find((l) => l.id === p.listingId);
-        const targetPickup = store.pickups.find((pick) => pick.id === p.pickupId);
-        const auditItem = {
-          id: `ver-aud-${Date.now()}`,
-          reservationId: p.reservationId,
-          pickupId: p.pickupId,
-          listingTitle: targetListing?.title || "Food Surplus Recovery",
-          stage: targetRes?.assignedVolunteerId ? "DONOR_TO_VOLUNTEER" : "DIRECT_DONOR_TO_NGO",
-          method: "QR",
-          verifiedByUserId: currentUser.id,
-          verifiedByUserName: currentUser.fullName,
-          verifiedByUserRole: currentUser.role,
-          donorName: targetListing?.donorName || "Donor",
-          ngoName: targetRes?.ngoName || "NGO",
-          volunteerName: targetRes?.assignedVolunteerName,
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          locality: targetListing?.donorLocality || "Surat",
-          result: "SUCCESS",
-          auditHash: `AUDIT_QR_${p.pickupId.slice(-6)}_${Date.now()}`
-        };
-        const updatedTimeline = targetRes ? [
-          ...targetRes.timeline,
-          {
-            step: "VERIFIED",
-            label: `Cryptographic QR verified by ${currentUser.fullName} (${currentUser.role})`,
-            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-            actorName: currentUser.fullName,
-            actorRole: currentUser.role
-          },
-          {
-            step: "COMPLETED",
-            label: "Food rescue transaction completed & safe handoff finalized",
-            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-            actorName: currentUser.fullName,
-            actorRole: currentUser.role
-          }
-        ] : [];
-        setStore((prev) => ({
-          ...prev,
-          consumedNonces: [...prev.consumedNonces, p.nonce],
-          verificationHistory: [auditItem, ...prev.verificationHistory],
-          foodListings: prev.foodListings.map((l) => l.id === p.listingId ? { ...l, status: "COMPLETED", updatedAt: (/* @__PURE__ */ new Date()).toISOString() } : l),
-          reservations: prev.reservations.map(
-            (r) => r.id === p.reservationId ? {
-              ...r,
-              status: "COMPLETED",
-              completedAt: (/* @__PURE__ */ new Date()).toISOString(),
-              timeline: updatedTimeline,
-              updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-            } : r
-          ),
-          pickups: prev.pickups.map(
-            (pick) => pick.id === p.pickupId ? {
-              ...pick,
-              status: "COMPLETED",
-              trackingState: "PICKUP_COMPLETED",
-              verifiedAt: (/* @__PURE__ */ new Date()).toISOString(),
-              verifiedBy: currentUser.id,
-              verifiedByName: currentUser.fullName,
-              verificationMethodUsed: "QR",
-              pickupNotes: `Successfully verified via cryptographic QR by ${currentUser.fullName} (${currentUser.role}).`
-            } : pick
-          )
-        }));
-        if (targetListing) {
-          sendNotification(
-            targetListing.donorId,
-            "Food Recovery Completed",
-            `Your surplus donation was successfully handed over and verified via QR. Thank you for eliminating hunger in Surat!`,
-            "VERIFICATION"
-          );
-        }
-        if (targetRes) {
-          sendNotification(
-            targetRes.ngoId,
-            "Pickup Verified & Received",
-            `Your team has completed the verified QR pickup for ${targetListing?.title || "food surplus"}.`,
-            "VERIFICATION"
-          );
-        }
+      let pickup = null;
+      if (pickupIdParam) {
+        pickup = store.pickups.find((p) => p.id === pickupIdParam);
       }
-      return report;
+      if (!pickup) {
+        pickup = store.pickups.find((p) => p.qrToken === tokenString?.trim());
+      }
+      if (!pickup) {
+        try {
+          const parsed = JSON.parse(atob(tokenString?.trim()));
+          if (parsed && parsed.pickupId) {
+            pickup = store.pickups.find((p) => p.id === parsed.pickupId);
+          }
+        } catch {}
+      }
+
+      const targetPickupId = pickup?.id || pickupIdParam;
+      if (!targetPickupId) {
+        return {
+          success: false,
+          errorMessage: "Pickup task not found for this QR token."
+        };
+      }
+
+      try {
+        const res = await ApiService.verifyQr(targetPickupId, tokenString?.trim());
+        if (res.success) {
+          setStore((prev) => ({
+            ...prev,
+            reservations: prev.reservations.map((r) =>
+              r.id === res.reservation?.id ? res.reservation : r
+            ),
+            pickups: prev.pickups.map((p) =>
+              p.id === res.pickup?.id ? res.pickup : p
+            )
+          }));
+          return { success: true, message: res.message, reservation: res.reservation, pickup: res.pickup };
+        }
+        return { success: false, errorMessage: res.error || "QR verification failed." };
+      } catch (err) {
+        return { success: false, errorMessage: err.message || "QR verification failed." };
+      }
     },
-    [currentUser, store.consumedNonces, store.reservations, store.pickups, store.foodListings, sendNotification]
+    [currentUser, store.pickups]
   );
   const verifyHandoffOtp = useCallback(
-    (pickupId, otpInput, stage) => {
+    async (pickupId, otpInput, stage) => {
       if (!currentUser) {
         return {
           success: false,
@@ -842,128 +766,28 @@ const AppProvider = ({ children }) => {
         };
       }
       const pickup = store.pickups.find((p) => p.id === pickupId);
-      if (!pickup) {
-        return {
-          success: false,
-          httpStatus: 404,
-          method: "OTP",
-          errorCode: "PICKUP_NOT_FOUND",
-          errorMessage: "Pickup record not found.",
-          checks: []
-        };
-      }
-      const reservation = store.reservations.find((r) => r.id === pickup.reservationId);
-      if (!reservation) {
-        return {
-          success: false,
-          httpStatus: 404,
-          method: "OTP",
-          errorCode: "RESERVATION_NOT_FOUND",
-          errorMessage: "Reservation record not found.",
-          checks: []
-        };
-      }
-      const listing = store.foodListings.find((l) => l.id === pickup.listingId);
-      if (!listing) {
-        return {
-          success: false,
-          httpStatus: 404,
-          method: "OTP",
-          errorCode: "LISTING_NOT_FOUND",
-          errorMessage: "Food listing record not found.",
-          checks: []
-        };
-      }
-      const result = verifyOtpCode(otpInput, pickup, reservation, listing, currentUser);
-      if (!result.success) {
-        setStore((prev) => ({
-          ...prev,
-          pickups: prev.pickups.map(
-            (p) => p.id === pickupId ? {
-              ...p,
-              otpAttemptCount: (p.otpAttemptCount || 0) + 1
-            } : p
-          )
-        }));
-        return result;
-      }
-      const auditItem = {
-        id: `ver-aud-${Date.now()}`,
-        reservationId: reservation.id,
-        pickupId: pickup.id,
-        listingTitle: listing.title,
-        stage: stage || (reservation.assignedVolunteerId ? "DONOR_TO_VOLUNTEER" : "DIRECT_DONOR_TO_NGO"),
-        method: "OTP",
-        verifiedByUserId: currentUser.id,
-        verifiedByUserName: currentUser.fullName,
-        verifiedByUserRole: currentUser.role,
-        donorName: listing.donorName,
-        ngoName: reservation.ngoName,
-        volunteerName: reservation.assignedVolunteerName,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        locality: listing.donorLocality,
-        result: "SUCCESS",
-        auditHash: result.auditHash || `AUDIT_OTP_${pickup.id.slice(-6)}_${Date.now()}`
-      };
-      const updatedTimeline = [
-        ...reservation.timeline,
-        {
-          step: "VERIFIED",
-          label: `Secure 6-digit OTP verified by ${currentUser.fullName} (${currentUser.role})`,
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          actorName: currentUser.fullName,
-          actorRole: currentUser.role
-        },
-        {
-          step: "COMPLETED",
-          label: "Food rescue transaction completed & safe handoff finalized",
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          actorName: currentUser.fullName,
-          actorRole: currentUser.role
+      const reservationId = pickup?.reservationId || pickupId;
+
+      try {
+        const res = await ApiService.verifyOtp(reservationId, otpInput, stage, pickupId);
+        if (res.success && res.reservation) {
+          setStore((prev) => ({
+            ...prev,
+            reservations: prev.reservations.map((r) =>
+              r.id === res.reservation.id ? res.reservation : r
+            ),
+            pickups: prev.pickups.map((p) =>
+              p.id === res.pickup.id ? res.pickup : p
+            )
+          }));
+          return { success: true, message: res.message, reservation: res.reservation, pickup: res.pickup };
         }
-      ];
-      setStore((prev) => ({
-        ...prev,
-        consumedNonces: [...prev.consumedNonces, pickup.nonce],
-        verificationHistory: [auditItem, ...prev.verificationHistory],
-        foodListings: prev.foodListings.map((l) => l.id === pickup.listingId ? { ...l, status: "COMPLETED", updatedAt: (/* @__PURE__ */ new Date()).toISOString() } : l),
-        reservations: prev.reservations.map(
-          (r) => r.id === pickup.reservationId ? {
-            ...r,
-            status: "COMPLETED",
-            completedAt: (/* @__PURE__ */ new Date()).toISOString(),
-            timeline: updatedTimeline,
-            updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-          } : r
-        ),
-        pickups: prev.pickups.map(
-          (p) => p.id === pickupId ? {
-            ...p,
-            status: "COMPLETED",
-            trackingState: "PICKUP_COMPLETED",
-            verifiedAt: (/* @__PURE__ */ new Date()).toISOString(),
-            verifiedBy: currentUser.id,
-            verifiedByName: currentUser.fullName,
-            verificationMethodUsed: "OTP",
-            pickupNotes: `Successfully verified via secure 6-digit OTP by ${currentUser.fullName} (${currentUser.role}).`
-          } : p
-        )
-      }));
-      sendNotification(
-        listing.donorId,
-        "Food Recovery Completed",
-        `Your surplus donation was successfully handed over and verified via OTP. Thank you for eliminating hunger in Surat!`,
-        "VERIFICATION"
-      );
-      sendNotification(
-        reservation.ngoId,
-        "Pickup Verified & Received",
-        `Your team has completed the verified OTP pickup for ${listing.title}.`,
-        "VERIFICATION"
-      );
-      return result;
+        return { success: false, errorMessage: res.error || "OTP verification failed." };
+      } catch (err) {
+        return { success: false, errorMessage: err.message || "OTP verification failed." };
+      }
     },
-    [currentUser, store.pickups, store.reservations, store.foodListings, sendNotification]
+    [currentUser, store.pickups]
   );
   const regenerateHandoffOtp = useCallback(
     (pickupId) => {
@@ -1044,44 +868,27 @@ const AppProvider = ({ children }) => {
     []
   );
   const advanceRecoveryState = useCallback(
-    (reservationId, targetStatus, notes) => {
-      const reservation = store.reservations.find((r) => r.id === reservationId);
-      if (!reservation) return { success: false, error: "Reservation not found" };
-      const stepLabelMap = {
-        PICKUP_SCHEDULED: "Pickup scheduled by team",
-        VOLUNTEER_EN_ROUTE: "Volunteer en route to donor kitchen",
-        PICKUP_STARTED: "Volunteer arrived at donor loading bay",
-        DELAYED: "Temporary transit delay reported"
-      };
-      const stepTimeline = {
-        step: targetStatus === "VOLUNTEER_EN_ROUTE" ? "IN_TRANSIT" : "CONFIRMED",
-        label: notes || stepLabelMap[targetStatus] || `Status updated to ${targetStatus}`,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        actorName: currentUser?.fullName,
-        actorRole: currentUser?.role
-      };
-      setStore((prev) => ({
-        ...prev,
-        reservations: prev.reservations.map(
-          (r) => r.id === reservationId ? {
-            ...r,
-            status: targetStatus,
-            timeline: [...r.timeline, stepTimeline],
-            updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-          } : r
-        ),
-        pickups: prev.pickups.map(
-          (p) => p.reservationId === reservationId ? {
-            ...p,
-            status: targetStatus === "VOLUNTEER_EN_ROUTE" ? "VOLUNTEER_EN_ROUTE" : targetStatus === "PICKUP_STARTED" ? "PICKUP_STARTED" : p.status,
-            trackingState: targetStatus === "VOLUNTEER_EN_ROUTE" || targetStatus === "PICKUP_STARTED" ? "PICKUP_ACTIVE" : p.trackingState,
-            pickupNotes: notes || p.pickupNotes
-          } : p
-        )
-      }));
-      return { success: true };
+    async (reservationId, targetStatus, notes) => {
+      try {
+        const res = await ApiService.advanceRecoveryState(reservationId, targetStatus, notes);
+        if (res.success && res.reservation) {
+          setStore((prev) => ({
+            ...prev,
+            reservations: prev.reservations.map((r) =>
+              r.id === res.reservation.id ? res.reservation : r
+            ),
+            pickups: prev.pickups.map((p) =>
+              p.reservationId === res.reservation.id ? (res.pickup || p) : p
+            )
+          }));
+          return { success: true, reservation: res.reservation, pickup: res.pickup };
+        }
+        return { success: false, error: res.error || "Failed to advance recovery state" };
+      } catch (err) {
+        return { success: false, error: err.message || "Failed to advance recovery state" };
+      }
     },
-    [currentUser, store.reservations]
+    []
   );
   const submitFeedback = useCallback(
     (feedbackData) => {
@@ -1283,6 +1090,7 @@ const AppProvider = ({ children }) => {
     [currentUser, store.users]
   );
   const markNotificationRead = useCallback((id) => {
+    ApiService.markNotificationRead(id).catch(() => {});
     setStore((prev) => ({
       ...prev,
       notifications: prev.notifications.map((n) => n.id === id ? { ...n, isRead: true } : n)
@@ -1290,6 +1098,7 @@ const AppProvider = ({ children }) => {
   }, []);
   const markAllNotificationsRead = useCallback(() => {
     if (!currentUser) return;
+    ApiService.markAllNotificationsRead().catch(() => {});
     setStore((prev) => ({
       ...prev,
       notifications: prev.notifications.map((n) => n.userId === currentUser.id ? { ...n, isRead: true } : n)

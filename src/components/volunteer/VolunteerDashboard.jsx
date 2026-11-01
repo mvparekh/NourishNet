@@ -24,7 +24,10 @@ const VolunteerDashboard = () => {
     verifyHandoffOtp
   } = useApp();
 
-  const [activeRecoveryId, setActiveRecoveryId] = useState(null);
+  const [activeRecoveryId, setActiveRecoveryId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("order") || params.get("recovery") || null;
+  });
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("ACTIVE");
   const [manualOtpModal, setManualOtpModal] = useState(null);
@@ -43,18 +46,20 @@ const VolunteerDashboard = () => {
   const unassignedPickups = pickups.filter((p) => !p.volunteerId && p.status === "PENDING");
   const totalMealsDelivered = completedTrips.reduce((sum, r) => sum + r.requestedQuantity, 0);
 
-  const handleClaimPickup = (pickupId) => {
-    assignVolunteerToPickup(pickupId, currentUser.id);
+  const handleClaimPickup = async (pickupId) => {
+    const pickupObj = pickups.find((p) => p.id === pickupId);
+    const resId = pickupObj?.reservationId || pickupId;
+    await assignVolunteerToPickup(resId, currentUser.id);
     setActiveTab("ACTIVE");
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!manualOtpModal) return;
     setManualOtpError("");
     setManualOtpSuccess("");
     const stage = manualOtpModal.step === "DONOR" ? "DONOR_TO_VOLUNTEER" : "VOLUNTEER_TO_NGO";
-    const res = verifyHandoffOtp(manualOtpModal.pickupId, manualOtpValue.trim(), stage);
+    const res = await verifyHandoffOtp(manualOtpModal.pickupId, manualOtpValue.trim(), stage);
     if (res.success) {
       setManualOtpSuccess("Verification successful!");
       setTimeout(() => {
@@ -83,13 +88,13 @@ const VolunteerDashboard = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded bg-[#C85A32] text-white">
-              Verified Relief Courier
+              Verified Delivery Partner
             </span>
             <span className="text-xs text-[#D7CCC8]">{currentUser.locality || "Surat"}, Surat</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">{currentUser.fullName}</h1>
           <p className="text-xs text-[#D7CCC8] max-w-xl">
-            Transport surplus food safely across Surat. Verify handoffs via QR scan or backup 6-digit OTP.
+            Transport surplus food safely across Surat. Verify handoffs via Single 4-digit OTP.
           </p>
         </div>
 
@@ -121,7 +126,7 @@ const VolunteerDashboard = () => {
             <Package className="w-4 h-4 text-[#5D4037]" />
           </div>
           <p className="text-2xl font-extrabold text-[#2C1810] mt-2">{unassignedPickups.length}</p>
-          <p className="text-[11px] text-[#8D6E63] mt-0.5">Awaiting courier claim</p>
+          <p className="text-[11px] text-[#8D6E63] mt-0.5">Awaiting Delivery Partner</p>
         </div>
 
         <div className="card-warm p-4">
@@ -374,7 +379,7 @@ const VolunteerDashboard = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FAF3F0] text-[#C85A32] border border-[#C85A32]/20">
-                          Needs Courier
+                          Needs Delivery Partner
                         </span>
                         <span className="text-xs text-[#8D6E63]">Order #{res.id.slice(-6)}</span>
                       </div>

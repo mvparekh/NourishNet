@@ -43,8 +43,8 @@ const NeedsAttentionBanner = ({ onAction }) => {
       if (pickup && pickup.status === "ASSIGNED") {
         attentionItems.push({
           id: `pickup-${pickup.id}`,
-          title: "Courier Assigned for Pickup",
-          message: `Relief courier is heading to your loading bay for reservation #${res.id.slice(-4)}.`,
+          title: "Delivery Partner Assigned for Pickup",
+          message: `Delivery partner is heading to your loading bay for reservation #${res.id.slice(-4)}.`,
           severity: "WARNING",
           actionLabel: "View QR Code",
           actionType: "VIEW_QR",
@@ -61,10 +61,10 @@ const NeedsAttentionBanner = ({ onAction }) => {
       const listing = foodListings.find((l) => l.id === res.listingId);
       attentionItems.push({
         id: `unassigned-${res.id}`,
-        title: "Dispatch Relief Courier Needed",
-        message: `Reserved batch "${listing?.title || "Surplus"}" requires a volunteer courier to initiate pickup.`,
+        title: "Dispatch Delivery Partner Needed",
+        message: `Reserved batch "${listing?.title || "Surplus"}" requires a Delivery Partner to initiate pickup.`,
         severity: "CRITICAL",
-        actionLabel: "Assign Courier",
+        actionLabel: "Assign Delivery Partner",
         actionType: "ASSIGN_COURIER",
         targetId: res.id
       });
@@ -98,7 +98,7 @@ const NeedsAttentionBanner = ({ onAction }) => {
       attentionItems.push({
         id: "admin-pending-apps",
         title: `${pendingApps.length} Verification Applications Pending`,
-        message: "New Surat food donors, NGOs, or couriers require license & FSSAI document review.",
+        message: "New Surat food donors, NGOs, or delivery partners require license & FSSAI document review.",
         severity: "WARNING",
         actionLabel: "Review Queue",
         actionType: "REVIEW_APP"

@@ -25,6 +25,14 @@ const MainLayout = () => {
       setIsLoginOpen(false);
       setIsApplyOpen(false);
       setIsDemoDrawerOpen(false);
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("login") === "true") {
+        setIsLoginOpen(true);
+      }
+      if (params.get("demo") === "true") {
+        setIsDemoDrawerOpen(true);
+      }
     }
   }, [isAuthenticated]);
 

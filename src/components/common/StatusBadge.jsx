@@ -28,7 +28,7 @@ const StatusBadge = ({ status, size = "sm", showDot = true }) => {
     case "VOLUNTEER_ASSIGNED":
       bg = "bg-[#FAF3F0] text-[#C85A32] border-[#C85A32]/30";
       dotBg = "bg-[#C85A32]";
-      label = status === "VOLUNTEER_ASSIGNED" ? "Courier Assigned" : status === "CONFIRMED" ? "Confirmed" : "Reserved";
+      label = status === "VOLUNTEER_ASSIGNED" ? "Delivery Partner Assigned" : status === "CONFIRMED" ? "Confirmed" : "Reserved";
       break;
 
     case "IN_TRANSIT":

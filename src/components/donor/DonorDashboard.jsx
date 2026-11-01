@@ -82,7 +82,7 @@ const DonorDashboard = () => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">{currentUser.fullName}</h1>
           <p className="text-xs text-[#D7CCC8] max-w-xl">
-            Surplus meals are matched instantly to accredited shelters and routed via verified volunteer couriers.
+            Surplus meals are matched instantly to accredited shelters and routed via verified delivery partners.
           </p>
         </div>
 
@@ -156,7 +156,7 @@ const DonorDashboard = () => {
                 Active Rescue Handoffs in Progress ({activeReservations.length})
               </h2>
             </div>
-            <span className="text-[11px] text-[#5D4037] font-medium">Verified Courier Routing</span>
+            <span className="text-[11px] text-[#5D4037] font-medium">Verified Delivery Partner Logistics</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -184,8 +184,8 @@ const DonorDashboard = () => {
                       <Truck className="w-3.5 h-3.5 text-[#5D4037]" />
                       <span className="font-medium text-[#2C1810]">
                         {res.assignedVolunteerName
-                          ? `Courier: ${res.assignedVolunteerName}`
-                          : "Assigning Courier..."}
+                          ? `Delivery Partner: ${res.assignedVolunteerName}`
+                          : "Assigning Delivery Partner..."}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-[#C85A32] font-bold">

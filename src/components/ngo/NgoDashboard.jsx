@@ -32,7 +32,10 @@ const NgoDashboard = () => {
     assignVolunteerToPickup
   } = useApp();
 
-  const [activeRecoveryId, setActiveRecoveryId] = useState(null);
+  const [activeRecoveryId, setActiveRecoveryId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("order") || params.get("recovery") || null;
+  });
   const [activeTab, setActiveTab] = useState("RECOMMENDED");
   const [searchQuery, setSearchQuery] = useState("");
   const [localityFilter, setLocalityFilter] = useState("ALL");
@@ -92,9 +95,10 @@ const NgoDashboard = () => {
     }
   };
 
-  const handleAssignRider = () => {
+  const handleAssignRider = async () => {
     if (!assignRiderPickup || !selectedVolunteerId) return;
-    assignVolunteerToPickup(assignRiderPickup.id, selectedVolunteerId);
+    const resId = assignRiderPickup.reservationId || assignRiderPickup.id;
+    await assignVolunteerToPickup(resId, selectedVolunteerId);
     setAssignRiderPickup(null);
   };
 
@@ -213,8 +217,8 @@ const NgoDashboard = () => {
                       <Truck className="w-3.5 h-3.5 text-[#5D4037]" />
                       <span className="font-medium text-[#2C1810]">
                         {res.assignedVolunteerName
-                          ? `Courier: ${res.assignedVolunteerName}`
-                          : "No courier assigned yet"}
+                          ? `Delivery Partner: ${res.assignedVolunteerName}`
+                          : "No Delivery Partner assigned yet"}
                       </span>
                     </div>
                     {!pickup?.volunteerId && (
@@ -226,7 +230,7 @@ const NgoDashboard = () => {
                         }}
                         className="text-[11px] font-bold text-[#C85A32] hover:underline cursor-pointer"
                       >
-                        + Assign Rider
+                        + Assign Delivery Partner
                       </button>
                     )}
                   </div>
@@ -714,7 +718,7 @@ const NgoDashboard = () => {
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#5D4037]">
-                <span>Volunteer Courier Logistics:</span>
+                <span>Delivery Partner Logistics:</span>
                 <span className="font-semibold text-[#5D4037]">₹0 (Community)</span>
               </div>
 
@@ -751,14 +755,14 @@ const NgoDashboard = () => {
         <Modal
           isOpen={true}
           onClose={() => setAssignRiderPickup(null)}
-          title="Assign Volunteer Courier"
-          subtitle="Dispatch a verified courier for this surplus recovery"
+          title="Assign Delivery Partner"
+          subtitle="Dispatch a verified Delivery Partner for this surplus recovery"
           maxWidth="sm"
         >
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-[#2C1810] mb-1">
-                Select Available Volunteer *
+                Select Available Delivery Partner *
               </label>
               <select
                 value={selectedVolunteerId}
@@ -786,7 +790,7 @@ const NgoDashboard = () => {
                 onClick={handleAssignRider}
                 className="btn-primary text-xs px-4 py-2"
               >
-                Assign Courier
+                Assign Delivery Partner
               </button>
             </div>
           </div>

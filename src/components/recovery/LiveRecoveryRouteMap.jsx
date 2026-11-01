@@ -73,13 +73,16 @@ const LiveRecoveryRouteMap = ({
           <div>
             <div className="flex items-center gap-1.5 font-bold text-white">
               <Navigation className="w-3.5 h-3.5 text-[#E07A5F]" />
-              <span>Surat Live Rescue Route</span>
+              <span>Surat Rescue Route (Simulation)</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-700/50 font-medium">
+                Simulated Movement
+              </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#C85A32] text-white font-mono font-bold">
                 {pickup.status}
               </span>
             </div>
             <p className="text-[11px] text-[#D7CCC8]">
-              {donorNode.label} Loading Bay → {ngoNode.label} Relief Shelter
+              {donorNode.label} Loading Bay → {ngoNode.label} Relief Shelter (Simulated trajectory & estimated time)
             </p>
           </div>
         </div>
@@ -88,12 +91,12 @@ const LiveRecoveryRouteMap = ({
         <div className="flex items-center gap-2">
           <div className="px-2.5 py-1 rounded-lg bg-[#3D2319] border border-[#5D4037] flex items-center gap-1.5 text-[#FAF7F2]">
             <Clock className="w-3.5 h-3.5 text-[#E07A5F]" />
-            <span>ETA: <strong>{remainingMins} mins</strong></span>
+            <span>Est. ETA: <strong>{remainingMins} mins</strong></span>
           </div>
 
           <div className="px-2.5 py-1 rounded-lg bg-[#3D2319] border border-[#5D4037] flex items-center gap-1.5 text-[#FAF7F2]">
             <Radio className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Dist: <strong>{distanceKm} km</strong></span>
+            <span>Est. Dist: <strong>{distanceKm} km</strong></span>
           </div>
 
           {/* Privacy Toggle (for Donor / Privacy compliance) */}

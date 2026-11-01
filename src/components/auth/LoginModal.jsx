@@ -8,10 +8,64 @@ import {
   ArrowRight,
   CheckCircle2,
   Eye,
-  EyeOff
+  EyeOff,
+  UserCheck,
+  Shield,
+  UtensilsCrossed,
+  Building2,
+  Truck,
+  HeartHandshake
 } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { useApp } from "../../context/AppContext";
+
+const NAMED_DEMO_ACCOUNTS = [
+  {
+    roleLabel: "Administrator",
+    roleKey: "ADMIN",
+    username: "admin.demo",
+    name: "City Operations Admin",
+    badgeClass: "bg-[#5D4037]/10 text-[#5D4037] border-[#5D4037]/20",
+    destDashboard: "Admin Dashboard",
+    icon: Shield
+  },
+  {
+    roleLabel: "Food Donor",
+    roleKey: "DONOR",
+    username: "donor.demo",
+    name: "Kansar Dining Donor",
+    badgeClass: "bg-[#C85A32]/10 text-[#C85A32] border-[#C85A32]/20",
+    destDashboard: "Donor Dashboard",
+    icon: UtensilsCrossed
+  },
+  {
+    roleLabel: "NGO / Shelter",
+    roleKey: "NGO",
+    username: "shelter.demo",
+    name: "Surat Food Relief Shelter",
+    badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    destDashboard: "NGO / Shelter Dashboard",
+    icon: Building2
+  },
+  {
+    roleLabel: "Delivery Partner",
+    roleKey: "VOLUNTEER",
+    username: "deliverypartner.demo",
+    name: "Rapid Relief Delivery Partner",
+    badgeClass: "bg-blue-50 text-blue-800 border-blue-200",
+    destDashboard: "Delivery Partner Dashboard",
+    icon: Truck
+  },
+  {
+    roleLabel: "Recipient",
+    roleKey: "NGO",
+    username: "recipient.demo",
+    name: "Ashram Community Recipient",
+    badgeClass: "bg-purple-50 text-purple-800 border-purple-200",
+    destDashboard: "Recipient Kitchen Dashboard",
+    icon: HeartHandshake
+  }
+];
 
 const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, prefillPassword }) => {
   const { login, resetPasswordRequest, setupAccountViaToken, demoMode } = useApp();
@@ -29,6 +83,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
   const [isForgotView, setIsForgotView] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSuccessMessage, setForgotSuccessMessage] = useState("");
+  const [quickLoggingInUser, setQuickLoggingInUser] = useState(null);
 
   // Prefill credentials if passed from DemoDrawer
   useEffect(() => {
@@ -48,6 +103,29 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
       setErrorMessage(res.errorMessage || "Invalid email or password.");
       setIsLocked(!!res.isLocked);
     }
+  };
+
+  const handleQuickLogin = async (acc) => {
+    setQuickLoggingInUser(acc.username);
+    setErrorMessage("");
+    try {
+      const res = await login(acc.username, "SuratSecure@2026");
+      if (res.success) {
+        onClose();
+      } else {
+        setErrorMessage(res.errorMessage || "Quick demo authentication failed.");
+      }
+    } catch (err) {
+      setErrorMessage(err.message || "Failed to sign in demo account.");
+    } finally {
+      setQuickLoggingInUser(null);
+    }
+  };
+
+  const handlePrefill = (acc) => {
+    setEmail(acc.username);
+    setPassword("SuratSecure@2026");
+    setErrorMessage("");
   };
 
   const handleSetupSubmit = async (e) => {
@@ -87,7 +165,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
       onClose={onClose}
       title={isForgotView ? "Reset Password" : activeTab === "ACTIVATE" ? "Activate Account" : "Sign in to NourishNet"}
       subtitle={isForgotView ? "Enter your registered email to receive reset instructions" : activeTab === "ACTIVATE" ? "Enter your invitation token and create your password" : "Surat Surplus Food Recovery & Redistribution Network"}
-      maxWidth="md"
+      maxWidth="xl"
     >
       {isForgotView ? (
         <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -103,7 +181,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                     setIsForgotView(false);
                     setForgotSuccessMessage("");
                   }}
-                  className="mt-3 text-xs font-semibold text-[#C85A32] underline"
+                  className="mt-3 text-xs font-semibold text-[#C85A32] underline cursor-pointer"
                 >
                   Return to Sign In
                 </button>
@@ -132,13 +210,13 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                 <button
                   type="button"
                   onClick={() => setIsForgotView(false)}
-                  className="text-xs text-[#5D4037] hover:text-[#2C1810] font-medium"
+                  className="text-xs text-[#5D4037] hover:text-[#2C1810] font-medium cursor-pointer"
                 >
                   Back to Sign In
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary text-xs px-5 py-2.5"
+                  className="btn-primary text-xs px-5 py-2.5 cursor-pointer"
                 >
                   Send Reset Link
                 </button>
@@ -157,7 +235,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                 setErrorMessage("");
                 setSuccessMessage("");
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 activeTab === "LOGIN"
                   ? "bg-white text-[#2C1810] shadow-xs"
                   : "text-[#5D4037] hover:text-[#2C1810]"
@@ -172,7 +250,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                 setErrorMessage("");
                 setSuccessMessage("");
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 activeTab === "ACTIVATE"
                   ? "bg-white text-[#2C1810] shadow-xs"
                   : "text-[#5D4037] hover:text-[#2C1810]"
@@ -204,17 +282,17 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-[#2C1810] mb-1">
-                  Email Address
+                  Email Address or Username
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#8D6E63] absolute left-3.5 top-3" />
                   <input
                     id="login-email-input"
-                    type="email"
+                    type="text"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. donor01@nourishnet.demo"
+                    placeholder="e.g. donor.demo or donor01@nourishnet.demo"
                     className="input-warm w-full pl-10"
                   />
                 </div>
@@ -228,7 +306,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                   <button
                     type="button"
                     onClick={() => setIsForgotView(true)}
-                    className="text-[11px] text-[#C85A32] hover:text-[#B34D28] font-medium"
+                    className="text-[11px] text-[#C85A32] hover:text-[#B34D28] font-medium cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -241,13 +319,13 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
+                    placeholder="Enter password (e.g. SuratSecure@2026)"
                     className="input-warm w-full pl-10 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-[#8D6E63] hover:text-[#2C1810] p-0.5"
+                    className="absolute right-3 top-2.5 text-[#8D6E63] hover:text-[#2C1810] p-0.5 cursor-pointer"
                     title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -259,7 +337,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                 id="login-submit-btn"
                 type="submit"
                 disabled={isLoading || isLocked}
-                className="btn-primary w-full py-2.5 px-4 text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="btn-primary w-full py-2.5 px-4 text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
                 {isLoading ? (
                   <Clock className="w-4 h-4 animate-spin text-[#FAF7F2]" />
@@ -279,7 +357,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                     onClose();
                     onOpenApply();
                   }}
-                  className="font-semibold text-[#C85A32] hover:underline"
+                  className="font-semibold text-[#C85A32] hover:underline cursor-pointer"
                 >
                   Apply to Join Network
                 </button>
@@ -348,7 +426,7 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
                 id="setup-submit-btn"
                 type="submit"
                 disabled={isLoading}
-                className="btn-terracotta w-full py-2.5 px-4 text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="btn-terracotta w-full py-2.5 px-4 text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
                 {isLoading ? (
                   <Clock className="w-4 h-4 animate-spin" />
@@ -362,22 +440,89 @@ const LoginModal = ({ isOpen, onClose, onOpenApply, onOpenDemo, prefillEmail, pr
             </form>
           )}
 
-          {/* Demo Mode Trigger Hint if demoMode === true */}
+          {/* CLEAR DEMO ACCOUNTS SECTION */}
           {demoMode && (
-            <div className="pt-3 border-t border-[#E7DCD5] flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-[#5D4037]">
-                <Sparkles className="w-3.5 h-3.5 text-[#C85A32]" />
-                <span>Demo Mode Active: Press <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E7DCD5] font-bold text-[#2C1810] shadow-2xs">Ctrl</kbd> to open Demo Accounts</span>
+            <div className="pt-4 border-t border-[#E7DCD5] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#2C1810]">
+                  <Sparkles className="w-4 h-4 text-[#C85A32]" />
+                  <span>Named Demo Accounts (1-Click Login)</span>
+                </div>
+                <div className="text-[11px] text-[#5D4037]">
+                  Password: <code className="bg-[#FAF3F0] text-[#C85A32] font-mono font-bold px-1.5 py-0.5 rounded border border-[#C85A32]/20">SuratSecure@2026</code>
+                </div>
               </div>
-              {onOpenDemo && (
-                <button
-                  type="button"
-                  onClick={onOpenDemo}
-                  className="text-xs font-semibold text-[#C85A32] hover:text-[#B34D28] underline cursor-pointer"
-                >
-                  View 25 Accounts
-                </button>
-              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" id="demo-accounts-grid">
+                {NAMED_DEMO_ACCOUNTS.map((acc) => {
+                  const Icon = acc.icon;
+                  const isCurrentQuick = quickLoggingInUser === acc.username;
+                  return (
+                    <div
+                      key={acc.username}
+                      className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#E7DCD5] hover:border-[#C85A32]/40 transition-all flex flex-col justify-between gap-2 shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-white border border-[#E7DCD5] flex items-center justify-center text-[#C85A32] shrink-0">
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${acc.badgeClass}`}>
+                                {acc.roleLabel}
+                              </span>
+                            </div>
+                            <p className="text-xs font-semibold text-[#2C1810] font-mono mt-0.5">
+                              {acc.username}
+                            </p>
+                            <p className="text-[10px] text-[#8D6E63] truncate max-w-[170px]">
+                              {acc.name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pt-1 border-t border-[#E7DCD5]/60">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickLogin(acc)}
+                          disabled={isCurrentQuick}
+                          className="btn-primary flex-1 py-1 px-2 text-[11px] flex items-center justify-center gap-1 cursor-pointer font-semibold"
+                        >
+                          {isCurrentQuick ? (
+                            <Clock className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <UserCheck className="w-3 h-3" />
+                          )}
+                          <span>Sign In</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePrefill(acc)}
+                          className="btn-secondary py-1 px-2 text-[11px] cursor-pointer"
+                          title="Pre-fill into form fields"
+                        >
+                          Fill
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-[#8D6E63]">
+                <span>Press <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E7DCD5] font-bold text-[#2C1810] shadow-2xs">Ctrl</kbd> to toggle full drawer</span>
+                {onOpenDemo && (
+                  <button
+                    type="button"
+                    onClick={onOpenDemo}
+                    className="font-semibold text-[#C85A32] hover:text-[#B34D28] underline cursor-pointer"
+                  >
+                    View 25 Accounts Drawer →
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

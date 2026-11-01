@@ -2,9 +2,11 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import {
   DEMO_USERS,
+  NAMED_DEMO_USERS,
   DEMO_FOOD_LISTINGS,
   DEMO_RESERVATIONS,
   DEMO_PICKUPS,
@@ -18,6 +20,8 @@ import {
 dotenv.config();
 const SECRET_KEY = process.env.RECOVERY_SIGNING_SECRET || crypto.randomBytes(32).toString("hex");
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+const DB_FILE = path.join(process.cwd(), "data", "db.json");
+
 function hashPasswordSecure(plainText, salt) {
   const actualSalt = salt || "nourishnet_salt_" + crypto.randomBytes(16).toString("hex");
   const derivedKey = crypto.scryptSync(plainText, actualSalt, 64);
@@ -26,7 +30,7 @@ function hashPasswordSecure(plainText, salt) {
 function verifyPasswordSecure(plainText, storedHash) {
   try {
     if (!storedHash || !storedHash.startsWith("scrypt$")) {
-      return plainText === "SuratSecure@2026";
+      return false;
     }
     const parts = storedHash.split("$");
     if (parts.length !== 3) return false;
@@ -226,30 +230,195 @@ class DatabaseState {
   usedNonces = new Set();
 
   constructor() {
-    this.resetToDefault();
+    if (!this.loadFromDisk()) {
+      this.resetToDefault();
+    }
+  }
+
+  saveToDisk() {
+    try {
+      const dataDir = path.dirname(DB_FILE);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const data = {
+        users: this.users,
+        organizations: this.organizations,
+        foodListings: this.foodListings,
+        reservations: this.reservations,
+        pickups: this.pickups,
+        notifications: this.notifications,
+        joinApplications: this.joinApplications,
+        issueReports: this.issueReports,
+        feedbacks: this.feedbacks,
+        moderationLogs: this.moderationLogs,
+        recoveryMessages: this.recoveryMessages,
+        usedNonces: Array.from(this.usedNonces),
+      };
+      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+    } catch (err) {
+      console.error("Failed to persist database state to disk:", err);
+    }
+  }
+
+  loadFromDisk() {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, "utf-8");
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.users) && Array.isArray(data.foodListings)) {
+          this.users = data.users;
+          this.organizations = data.organizations || [];
+          this.foodListings = data.foodListings || [];
+          this.reservations = data.reservations || [];
+          this.pickups = data.pickups || [];
+          this.notifications = data.notifications || [];
+          this.joinApplications = data.joinApplications || [];
+          this.issueReports = data.issueReports || [];
+          this.feedbacks = data.feedbacks || [];
+          this.moderationLogs = data.moderationLogs || [];
+          this.recoveryMessages = data.recoveryMessages || [];
+          this.usedNonces = new Set(data.usedNonces || []);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load database state from disk:", err);
+    }
+    return false;
   }
 
   resetToDefault() {
-    // Deep clone seed base users + 25 Demo Users and restore clean state
-    this.users = JSON.parse(JSON.stringify([...SEED_USERS, ...DEMO_USERS])).map((u) => ({
+    // Deep clone seed base users + 25 Demo Users + Phase 2 Named Demo Accounts
+    this.users = JSON.parse(JSON.stringify([...SEED_USERS, ...DEMO_USERS, ...NAMED_DEMO_USERS])).map((u) => ({
       ...u,
+      passwordHash: u.passwordHash || DEFAULT_PASSWORD_HASH,
       accountState: "VERIFIED",
       isActive: true,
       failedAttempts: 0,
       lockoutUntil: 0,
     }));
     this.organizations = JSON.parse(JSON.stringify(SEED_ORGANIZATIONS));
-    this.foodListings = JSON.parse(JSON.stringify(DEMO_FOOD_LISTINGS));
-    this.reservations = JSON.parse(JSON.stringify(DEMO_RESERVATIONS));
-    this.pickups = JSON.parse(JSON.stringify(DEMO_PICKUPS));
+
+    const namedListings = [
+      {
+        id: "list-named-donor-1",
+        donorId: "u-named-donor",
+        donorName: "Kansar Gujarati Thali & Dining",
+        donorOrgType: "RESTAURANT",
+        donorPhone: "+91 98251 99002",
+        donorCity: "Surat",
+        donorLocality: "Vesu",
+        title: "Fresh Kathiyawadi Thali & Chaas Surplus",
+        category: "COOKED_MEAL",
+        quantity: 40,
+        totalQuantity: 40,
+        reservedQuantity: 0,
+        remainingQuantity: 40,
+        unit: "PLATES",
+        recoveryModel: "DONATION",
+        pricePerUnit: 0,
+        dietaryType: "VEG",
+        storageCondition: "HOT_INSULATED",
+        packagingStatus: "FOOD_GRADE_CONTAINERS",
+        preparedAt: new Date(Date.now() - 3600000).toISOString(),
+        expiresAt: new Date(Date.now() + 18000000).toISOString(),
+        pickupWindowStart: new Date(Date.now()).toISOString(),
+        pickupWindowEnd: new Date(Date.now() + 18000000).toISOString(),
+        pickupAddress: "Shop 104, VIP Galleria, University Road, Vesu, Surat",
+        latitude: 21.1517,
+        longitude: 72.7766,
+        status: "AVAILABLE",
+        notes: "Fresh vegetarian lunch surplus prepared under high hygiene standards.",
+        foodSafetyDeclaration: true,
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 3600000).toISOString()
+      }
+    ];
+
+    const namedReservations = [
+      {
+        id: "res-named-active",
+        listingId: "list-demo-101",
+        ngoId: "u-named-shelter",
+        ngoName: "Surat Food Relief Shelter",
+        ngoPhone: "+91 98252 99003",
+        status: "DELIVERED",
+        requestedQuantity: 25,
+        recoveryModel: "DONATION",
+        unitPrice: 0,
+        itemTotal: 0,
+        platformFee: 0,
+        logisticsFee: 0,
+        finalPayableAmount: 0,
+        paymentStatus: "FREE_DONATION",
+        assignedVolunteerId: "u-named-dp",
+        assignedVolunteerName: "Rapid Relief Delivery Partner",
+        assignedVolunteerPhone: "+91 97241 99004",
+        confirmationCode: "4921",
+        timeline: [
+          { step: "LISTED", label: "Surplus listed by Kansar Dining", timestamp: new Date(Date.now() - 7200000).toISOString(), actorName: "Kansar Dining", actorRole: "DONOR" },
+          { step: "RESERVED", label: "Claimed by Surat Food Relief Shelter", timestamp: new Date(Date.now() - 5400000).toISOString(), actorName: "Surat Food Relief Shelter", actorRole: "NGO" },
+          { step: "ASSIGNED", label: "Assigned to Delivery Partner Rapid Relief", timestamp: new Date(Date.now() - 3600000).toISOString(), actorName: "Surat Logistics Dispatch", actorRole: "SYSTEM" },
+          { step: "IN_TRANSIT", label: "Picked up and in transit to shelter", timestamp: new Date(Date.now() - 1800000).toISOString(), actorName: "Rapid Relief Delivery Partner", actorRole: "VOLUNTEER" },
+          { step: "DELIVERED", label: "Food arrived at shelter loading bay. Ready for OTP verification.", timestamp: new Date(Date.now() - 300000).toISOString(), actorName: "Rapid Relief Delivery Partner", actorRole: "VOLUNTEER" }
+        ],
+        createdAt: new Date(Date.now() - 7200000).toISOString(),
+        confirmedAt: new Date(Date.now() - 5400000).toISOString(),
+        updatedAt: new Date(Date.now() - 300000).toISOString(),
+        version: 1
+      }
+    ];
+
+    const namedPickups = [
+      {
+        id: "pick-named-active",
+        reservationId: "res-named-active",
+        listingId: "list-demo-101",
+        ngoId: "u-named-shelter",
+        donorId: "u-demo-donor-1",
+        volunteerId: "u-named-dp",
+        otpCode: "4921",
+        otpExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        otpAttemptCount: 0,
+        status: "DELIVERED",
+        pickupNotes: "Arrived at Surat Food Relief Shelter. Handover OTP ready.",
+        nonce: "4921",
+        qrToken: "signed_token_4921"
+      }
+    ];
+
+    this.foodListings = [...namedListings, ...JSON.parse(JSON.stringify(DEMO_FOOD_LISTINGS))];
+    this.reservations = [...namedReservations, ...JSON.parse(JSON.stringify(DEMO_RESERVATIONS))];
+    this.pickups = [...namedPickups, ...JSON.parse(JSON.stringify(DEMO_PICKUPS))];
     this.joinApplications = JSON.parse(JSON.stringify(DEMO_JOIN_APPLICATIONS));
     this.issueReports = JSON.parse(JSON.stringify(DEMO_ISSUE_REPORTS));
     this.feedbacks = JSON.parse(JSON.stringify(DEMO_FEEDBACKS));
     this.moderationLogs = JSON.parse(JSON.stringify(DEMO_AUDIT_LOGS));
     this.recoveryMessages = JSON.parse(JSON.stringify(DEMO_RECOVERY_MESSAGES));
-    this.notifications = [];
+    this.notifications = [
+      {
+        id: `notif-init-dp-1`,
+        userId: "u-named-dp",
+        title: "Active Handover Ready",
+        message: "You have arrived at Surat Food Relief Shelter with 25 plates of surplus. Enter the 4-digit OTP from shelter staff to complete delivery.",
+        type: "ASSIGNMENT",
+        isRead: false,
+        createdAt: new Date(Date.now() - 300000).toISOString()
+      },
+      {
+        id: `notif-init-shelter-1`,
+        userId: "u-named-shelter",
+        title: "Delivery Partner Arrived",
+        message: "Rapid Relief Delivery Partner has arrived with your food rescue order. Handover OTP is 4921.",
+        type: "DELIVERY",
+        isRead: false,
+        createdAt: new Date(Date.now() - 300000).toISOString()
+      }
+    ];
     this.otpAttempts = new Map();
     this.usedNonces = new Set();
+    this.saveToDisk();
   }
   // Mutex lock for listings during claim operations to prevent double-booking
   async acquireLock(listingId) {
@@ -393,6 +562,38 @@ async function startServer() {
       city: "Surat"
     });
   });
+  app.get("/session-bridge", (req, res) => {
+    const { email, username, tab, recovery } = req.query;
+    const identifier = (email || username || "").trim().toLowerCase();
+    const user = db.users.find(
+      (u) =>
+        u.email.toLowerCase() === identifier ||
+        (u.username && u.username.toLowerCase() === identifier) ||
+        u.email.toLowerCase() === `${identifier}@nourishnet.demo`
+    );
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    const token = `sess_${crypto.randomBytes(32).toString("hex")}`;
+    db.sessions.set(token, {
+      token,
+      userId: user.id,
+      role: user.role,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 24 * 60 * 60 * 1e3
+    });
+    res.send(`<!DOCTYPE html>
+<html>
+<head><title>NourishNet Session Bridge</title></head>
+<body>
+<script>
+  localStorage.setItem('nourishnet_auth_token', '${token}');
+  ${tab ? `sessionStorage.setItem('nourishnet_pending_tab', '${tab}');` : ""}
+  window.location.replace('${recovery ? `/?recovery=${recovery}` : "/"}');
+</script>
+</body>
+</html>`);
+  });
   app.get("/api/demo/users", (req, res) => {
     if (process.env.DEMO_MODE === "false") {
       return res.status(403).json({ error: "Demo mode is disabled in this environment." });
@@ -408,6 +609,7 @@ async function startServer() {
       success: true,
       totalCount: DEMO_USERS.length,
       users: DEMO_USERS.map(({ passwordHash: _, ...u }) => u),
+      namedAccounts: NAMED_DEMO_USERS.map(({ passwordHash: _, ...u }) => u),
       grouped,
       defaultPassword: "SuratSecure@2026"
     });
@@ -420,17 +622,23 @@ async function startServer() {
     res.json({ success: true, message: "Demo data reset successfully." });
   });
   app.post("/api/auth/login", (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required." });
+    const { email, username, password } = req.body;
+    const identifier = (email || username || "").trim().toLowerCase();
+    if (!identifier || !password) {
+      return res.status(400).json({ error: "Email or username and password are required." });
     }
-    const trimmedEmail = email.trim().toLowerCase();
-    let user = db.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+    let user = db.users.find(
+      (u) =>
+        u.email.toLowerCase() === identifier ||
+        (u.username && u.username.toLowerCase() === identifier) ||
+        (u.username && `${u.username.toLowerCase()}@nourishnet.demo` === identifier) ||
+        u.email.toLowerCase() === `${identifier}@nourishnet.demo`
+    );
     if (!user) {
-      const alias1 = trimmedEmail
+      const alias1 = identifier
         .replace('volunteer0', 'vol0')
         .replace('superadmin0', 'super0');
-      const alias2 = trimmedEmail
+      const alias2 = identifier
         .replace('vol0', 'volunteer0')
         .replace('super0', 'superadmin0');
       user = db.users.find(
@@ -438,7 +646,7 @@ async function startServer() {
       );
     }
     if (!user || !verifyPasswordSecure(password, user.passwordHash || "")) {
-      return res.status(401).json({ error: "Invalid email address or password combination." });
+      return res.status(401).json({ error: "Invalid email/username or password combination." });
     }
     if (user.accountState === "SUSPENDED" || user.accountState === "DEACTIVATED") {
       return res.status(403).json({ error: `Your account is ${user.accountState.toLowerCase()}. Contact administrator.` });
@@ -522,24 +730,158 @@ async function startServer() {
     res.json({ success: true, message: "Account activated successfully.", user: safeUser, token: sessToken });
   });
   app.get("/api/state", (req, res) => {
+    let authUser = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const session = db.sessions.get(token);
+      if (session && session.expiresAt >= Date.now()) {
+        authUser = db.users.find((u) => u.id === session.userId && u.isActive && u.accountState !== "SUSPENDED");
+      }
+    }
+
+    const outcomeMetrics = db.calculateMetrics();
+    const demoMode = process.env.DEMO_MODE !== "false";
+
+    if (!authUser) {
+      if (!demoMode) {
+        return res.json({
+          users: [],
+          organizations: [],
+          foodListings: db.foodListings.filter((l) => l.status === "AVAILABLE").map((l) => ({
+            id: l.id,
+            title: l.title,
+            category: l.category,
+            quantity: l.quantity,
+            unit: l.unit,
+            recoveryModel: l.recoveryModel,
+            pricePerUnit: l.pricePerUnit,
+            donorLocality: l.donorLocality,
+            donorCity: l.donorCity,
+            expiresAt: l.expiresAt,
+            status: l.status,
+            createdAt: l.createdAt
+          })),
+          reservations: [],
+          pickups: [],
+          joinApplications: [],
+          issueReports: [],
+          feedbacks: [],
+          moderationLogs: [],
+          recoveryMessages: [],
+          notifications: [],
+          outcomeMetrics,
+          demoMode: false
+        });
+      }
+
+      const sanitizedDemoUsers = db.users.map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        role: u.role,
+        locality: u.locality,
+        city: u.city,
+        orgName: u.orgName,
+        orgType: u.orgType,
+        ratingAverage: u.ratingAverage,
+        accountState: u.accountState,
+        isActive: u.isActive,
+        isVerified: u.isVerified,
+      }));
+
+      return res.json({
+        users: sanitizedDemoUsers,
+        organizations: db.organizations,
+        foodListings: db.foodListings,
+        reservations: db.reservations,
+        pickups: db.pickups,
+        joinApplications: [],
+        issueReports: [],
+        feedbacks: db.feedbacks,
+        moderationLogs: [],
+        recoveryMessages: [],
+        notifications: [],
+        outcomeMetrics,
+        demoMode: true
+      });
+    }
+
+    const isSuperAdmin = authUser.role === "SUPER_ADMIN";
+    const isAdmin = authUser.role === "ADMIN" || isSuperAdmin;
+    const isDonor = authUser.role === "DONOR";
+    const isNgo = authUser.role === "NGO";
+    const isVolunteer = authUser.role === "VOLUNTEER";
+
     const sanitizedUsers = db.users.map((u) => {
       const { passwordHash: _, ...rest } = u;
+      if (!isAdmin && u.id !== authUser.id) {
+        return {
+          id: u.id,
+          fullName: u.fullName,
+          email: u.email,
+          role: u.role,
+          locality: u.locality,
+          city: u.city,
+          orgName: u.orgName,
+          orgType: u.orgType,
+          ratingAverage: u.ratingAverage,
+          accountState: u.accountState,
+          isActive: u.isActive,
+          isVerified: u.isVerified,
+          phone: u.phone ? (u.phone.substring(0, 7) + " ****") : undefined
+        };
+      }
       return rest;
     });
+
+    let visibleReservations = db.reservations;
+    let visiblePickups = db.pickups;
+    let visibleListings = db.foodListings;
+    let visibleMessages = db.recoveryMessages;
+    let visibleApplications = [];
+    let visibleLogs = [];
+    let visibleIssueReports = [];
+
+    if (isAdmin) {
+      visibleApplications = db.joinApplications;
+      visibleLogs = db.moderationLogs;
+      visibleIssueReports = db.issueReports;
+    } else if (isDonor) {
+      visibleListings = db.foodListings.filter((l) => l.donorId === authUser.id || l.status === "AVAILABLE");
+      const myListingIds = new Set(db.foodListings.filter((l) => l.donorId === authUser.id).map((l) => l.id));
+      visibleReservations = db.reservations.filter((r) => myListingIds.has(r.listingId));
+      visiblePickups = db.pickups.filter((p) => p.donorId === authUser.id || myListingIds.has(p.listingId));
+      const myResIds = new Set(visibleReservations.map((r) => r.id));
+      visibleMessages = db.recoveryMessages.filter((m) => myResIds.has(m.reservationId));
+    } else if (isNgo) {
+      visibleReservations = db.reservations.filter((r) => r.ngoId === authUser.id);
+      visiblePickups = db.pickups.filter((p) => p.ngoId === authUser.id);
+      const myResIds = new Set(visibleReservations.map((r) => r.id));
+      visibleMessages = db.recoveryMessages.filter((m) => myResIds.has(m.reservationId));
+    } else if (isVolunteer) {
+      visiblePickups = db.pickups.filter((p) => p.volunteerId === authUser.id || (!p.volunteerId && p.status === "PENDING"));
+      const myPickupResIds = new Set(visiblePickups.map((p) => p.reservationId));
+      visibleReservations = db.reservations.filter((r) => r.assignedVolunteerId === authUser.id || myPickupResIds.has(r.id));
+      visibleMessages = db.recoveryMessages.filter((m) => myPickupResIds.has(m.reservationId));
+    }
+
+    const userNotifications = db.notifications.filter((n) => n.userId === authUser.id);
+
     res.json({
       users: sanitizedUsers,
       organizations: db.organizations,
-      foodListings: db.foodListings,
-      reservations: db.reservations,
-      pickups: db.pickups,
-      joinApplications: db.joinApplications,
-      issueReports: db.issueReports,
+      foodListings: visibleListings,
+      reservations: visibleReservations,
+      pickups: visiblePickups,
+      joinApplications: visibleApplications,
+      issueReports: visibleIssueReports,
       feedbacks: db.feedbacks,
-      moderationLogs: db.moderationLogs,
-      recoveryMessages: db.recoveryMessages,
-      notifications: db.notifications,
-      outcomeMetrics: db.calculateMetrics(),
-      demoMode: process.env.DEMO_MODE !== "false"
+      moderationLogs: visibleLogs,
+      recoveryMessages: visibleMessages,
+      notifications: userNotifications,
+      outcomeMetrics,
+      demoMode
     });
   });
   app.post("/api/listings/create", authMiddleware, (req, res) => {
@@ -586,6 +928,7 @@ async function startServer() {
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db.foodListings.unshift(newListing);
+    db.saveToDisk();
     res.json({ success: true, listing: newListing });
   });
   app.post("/api/reservations/claim", authMiddleware, async (req, res) => {
@@ -593,8 +936,8 @@ async function startServer() {
     if (user.role !== "NGO") {
       return res.status(403).json({ error: "Only authorized NGOs can claim food surplus." });
     }
-    const { listingId, requestedQuantity } = req.body;
-    const reqQty = Number(requestedQuantity);
+    const { listingId, requestedQuantity, quantity } = req.body;
+    const reqQty = Number(requestedQuantity || quantity);
     if (!listingId || !reqQty || reqQty <= 0) {
       return res.status(400).json({ error: "Valid listingId and positive requested quantity required." });
     }
@@ -653,7 +996,7 @@ async function startServer() {
           ...assignedVolunteer ? [
             {
               step: "ASSIGNED",
-              label: `Automated dispatch assigned courier ${assignedVolunteer.fullName}`,
+              label: `Automated dispatch assigned Delivery Partner ${assignedVolunteer.fullName}`,
               timestamp: nowIso,
               actorName: "NourishNet Dispatch Engine",
               actorRole: "SYSTEM"
@@ -665,9 +1008,10 @@ async function startServer() {
         updatedAt: nowIso,
         version: 1
       };
-      const confirmationCode = Math.floor(1e3 + Math.random() * 9e3).toString();
+      const confirmationCode = crypto.randomInt(1000, 10000).toString();
       const rawTokenPayload = `${resId}:${pickId}:${listing.id}:${confirmationCode}:${Date.now()}`;
       const signedQrToken = crypto.createHmac("sha256", SECRET_KEY).update(rawTokenPayload).digest("hex").substring(0, 16);
+      const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
       const pickup = {
         id: pickId,
         reservationId: resId,
@@ -680,16 +1024,19 @@ async function startServer() {
         qrGeneratedAt: nowIso,
         qrExpiresAt: listing.pickupWindowEnd,
         otpCode: confirmationCode,
+        otpExpiresAt,
+        otpAttemptCount: 0,
         status: assignedVolunteer ? "ASSIGNED" : "PENDING",
-        pickupNotes: assignedVolunteer ? `Dispatched to ${assignedVolunteer.fullName}. Pickup at ${listing.donorLocality}.` : "Awaiting courier matching."
+        pickupNotes: assignedVolunteer ? `Dispatched to ${assignedVolunteer.fullName}. Pickup at ${listing.donorLocality}.` : "Awaiting Delivery Partner matching."
       };
       db.reservations.unshift(reservation);
       db.pickups.unshift(pickup);
+      db.saveToDisk();
       db.notifications.unshift({
         id: `notif-${Date.now()}-d`,
         userId: listing.donorId,
         title: "Surplus Food Claimed",
-        message: `${user.orgName || user.fullName} claimed ${reqQty} ${listing.unit}. ${assignedVolunteer ? `Courier ${assignedVolunteer.fullName} is assigned.` : "Dispatching courier."}`,
+        message: `${user.orgName || user.fullName} claimed ${reqQty} ${listing.unit}. ${assignedVolunteer ? `Delivery Partner ${assignedVolunteer.fullName} is assigned.` : "Dispatching Delivery Partner."}`,
         type: "RESERVATION",
         isRead: false,
         createdAt: nowIso
@@ -725,9 +1072,12 @@ async function startServer() {
     }
     const reservation = db.reservations.find((r) => r.id === pickup.reservationId);
     const listing = db.foodListings.find((l) => l.id === pickup.listingId);
-    const isAuthorized = user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.id === pickup.volunteerId || user.id === pickup.donorId;
+    const isAuthorized = user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.id === pickup.volunteerId || user.id === pickup.donorId || (reservation && user.id === reservation.assignedVolunteerId);
     if (!isAuthorized) {
       return res.status(403).json({ error: "You are not authorized to confirm this pickup." });
+    }
+    if (pickup.status === "COMPLETED" || pickup.status === "CANCELLED") {
+      return res.status(400).json({ error: `Cannot confirm pickup on an order that is already ${pickup.status.toLowerCase()}.` });
     }
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     pickup.status = "IN_TRANSIT";
@@ -739,7 +1089,7 @@ async function startServer() {
       reservation.status = "PICKUP_STARTED";
       reservation.timeline.push({
         step: "IN_TRANSIT",
-        label: `Surplus collected by courier ${user.fullName}. Delivering to ${reservation.ngoName}.`,
+        label: `Surplus collected by Delivery Partner ${user.fullName}. Delivering to ${reservation.ngoName}.`,
         timestamp: nowIso,
         actorName: user.fullName,
         actorRole: user.role
@@ -751,12 +1101,13 @@ async function startServer() {
         id: `notif-${Date.now()}-ngo`,
         userId: reservation.ngoId,
         title: "Food Surplus In Transit",
-        message: `Courier has collected the ${reservation.requestedQuantity} surplus from ${listing?.donorName || "donor"} and is en route to your center.`,
+        message: `Delivery Partner has collected the ${reservation.requestedQuantity} surplus from ${listing?.donorName || "donor"} and is en route to your center.`,
         type: "PICKUP",
         isRead: false,
         createdAt: nowIso
       });
     }
+    db.saveToDisk();
     res.json({ success: true, message: "Pickup confirmed. Food is now in transit to the shelter.", pickup, reservation });
   });
   app.post("/api/handoff/confirm-delivery", authMiddleware, (req, res) => {
@@ -771,6 +1122,9 @@ async function startServer() {
     const isAuthorized = user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.id === pickup.volunteerId || user.id === pickup.ngoId;
     if (!isAuthorized) {
       return res.status(403).json({ error: "You are not authorized to confirm delivery for this order." });
+    }
+    if (pickup.status === "COMPLETED" || pickup.status === "CANCELLED") {
+      return res.status(400).json({ error: `Cannot confirm delivery on an order that is already ${pickup.status.toLowerCase()}.` });
     }
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     pickup.status = "COMPLETED";
@@ -808,6 +1162,7 @@ async function startServer() {
         createdAt: nowIso
       });
     }
+    db.saveToDisk();
     res.json({ success: true, message: "Delivery confirmed and recovery successfully completed!", pickup, reservation, listing });
   });
   app.post("/api/reservations/cancel", authMiddleware, (req, res) => {
@@ -820,6 +1175,9 @@ async function startServer() {
     const isAuthorized = user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.id === reservation.ngoId || user.id === db.foodListings.find((l) => l.id === reservation.listingId)?.donorId;
     if (!isAuthorized) {
       return res.status(403).json({ error: "Unauthorized to cancel this reservation." });
+    }
+    if (reservation.status === "COMPLETED") {
+      return res.status(400).json({ error: "Cannot cancel a completed food recovery." });
     }
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     reservation.status = "CANCELLED";
@@ -857,28 +1215,69 @@ async function startServer() {
         createdAt: nowIso
       });
     }
+    db.saveToDisk();
     res.json({ success: true, message: "Reservation cancelled and inventory restored to available pool." });
   });
 
   app.post("/api/handoff/advance-state", authMiddleware, (req, res) => {
     const { reservationId, toState, notes } = req.body;
+    if (!reservationId || !toState) {
+      return res.status(400).json({ error: "Reservation ID and target state are required." });
+    }
+
     const reservation = db.reservations.find((r) => r.id === reservationId);
     if (!reservation) {
       return res.status(404).json({ error: "Reservation not found." });
     }
+
+    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+    const listing = db.foodListings.find((l) => l.id === reservation.listingId);
+
+    // Authorization check: User must be a stakeholder (donor, NGO, assigned volunteer, or admin)
+    const user = req.user;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isDonor = user.id === listing?.donorId || (user.role === "DONOR" && listing?.donorId === user.id);
+    const isNgo = user.id === reservation.ngoId || (user.role === "NGO" && reservation.ngoId === user.id);
+    const isAssignedVol = user.id === reservation.assignedVolunteerId || user.id === pickup?.volunteerId;
+
+    if (!isAdmin && !isDonor && !isNgo && !isAssignedVol) {
+      return res.status(403).json({ error: "You are not authorized to advance the state of this order." });
+    }
+
     const validStates = [
       "RESERVED",
       "ASSIGNED",
+      "VOLUNTEER_ASSIGNED",
       "SCHEDULED",
+      "PICKUP_SCHEDULED",
+      "VOLUNTEER_EN_ROUTE",
+      "PICKUP_STARTED",
       "PICKED_UP",
       "IN_TRANSIT",
       "DELIVERED",
       "COMPLETED",
       "CANCELLED"
     ];
+
     if (!validStates.includes(toState)) {
       return res.status(400).json({ error: `Invalid target state: ${toState}` });
     }
+
+    // Terminal state protection: cannot transition out of COMPLETED or CANCELLED
+    if (reservation.status === "COMPLETED" || reservation.status === "CANCELLED") {
+      return res.status(400).json({ error: `Cannot transition an order that is in terminal state '${reservation.status}'.` });
+    }
+
+    // Disallow skipping directly from unassigned/reserved to COMPLETED without handoff verification
+    if ((reservation.status === "RESERVED" || reservation.status === "CONFIRMED") && toState === "COMPLETED" && !isAdmin) {
+      return res.status(400).json({ error: "Direct completion requires valid OTP/QR handoff verification." });
+    }
+
+    // Disallow regressing backwards from IN_TRANSIT or DELIVERED back to SCHEDULED or CONFIRMED
+    if (["IN_TRANSIT", "DELIVERED"].includes(reservation.status) && ["SCHEDULED", "CONFIRMED", "RESERVED"].includes(toState)) {
+      return res.status(400).json({ error: `Invalid backwards state transition from '${reservation.status}' to '${toState}'.` });
+    }
+
     const nowIso = new Date().toISOString();
     reservation.status = toState;
     if (!reservation.timeline) reservation.timeline = [];
@@ -890,12 +1289,70 @@ async function startServer() {
       actorRole: req.user.role
     });
     reservation.updatedAt = nowIso;
-    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+
     if (pickup) {
-      if (toState === "PICKED_UP" || toState === "IN_TRANSIT") pickup.status = "IN_TRANSIT";
-      if (toState === "DELIVERED" || toState === "COMPLETED") pickup.status = "COMPLETED";
+      if (toState === "PICKED_UP" || toState === "IN_TRANSIT" || toState === "PICKUP_STARTED" || toState === "VOLUNTEER_EN_ROUTE") {
+        pickup.status = toState === "VOLUNTEER_EN_ROUTE" ? "VOLUNTEER_EN_ROUTE" : "IN_TRANSIT";
+      }
+      if (toState === "DELIVERED") {
+        pickup.status = "DELIVERED";
+      }
+      if (toState === "COMPLETED") {
+        pickup.status = "COMPLETED";
+      }
+      if (toState === "CANCELLED") {
+        pickup.status = "CANCELLED";
+      }
       pickup.updatedAt = nowIso;
     }
+
+    if (toState === "IN_TRANSIT" || toState === "PICKED_UP") {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-transit-ngo`,
+        userId: reservation.ngoId,
+        title: "Surplus in Transit",
+        message: `Your food surplus from ${listing?.donorName || "donor"} is now in transit with the Delivery Partner.`,
+        type: "DELIVERY",
+        isRead: false,
+        createdAt: nowIso
+      });
+    } else if (toState === "DELIVERED") {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-delivered-ngo`,
+        userId: reservation.ngoId,
+        title: "Delivery Partner Arrived",
+        message: `Delivery Partner has arrived at your shelter loading bay. Share your Handover OTP (${pickup?.otpCode || reservation.confirmationCode}) to complete handover.`,
+        type: "DELIVERY",
+        isRead: false,
+        createdAt: nowIso
+      });
+    } else if (toState === "CANCELLED") {
+      if (listing) {
+        db.notifications.unshift({
+          id: `notif-${Date.now()}-cancel-donor`,
+          userId: listing.donorId,
+          title: "Food Reservation Cancelled",
+          message: `The reservation for "${listing.title}" was cancelled. Inventory restored to available surplus.`,
+          type: "RESERVATION",
+          isRead: false,
+          createdAt: nowIso
+        });
+      }
+    }
+
+    if (toState === "COMPLETED") {
+      reservation.completedAt = nowIso;
+      if (listing && (listing.remainingQuantity || 0) <= 0) {
+        const allDone = db.reservations.filter((r) => r.listingId === listing.id).every((r) => r.status === "COMPLETED");
+        if (allDone) {
+          listing.status = "COMPLETED";
+          listing.updatedAt = nowIso;
+        }
+      }
+    }
+
+    db.saveToDisk();
+
     res.json({
       success: true,
       message: `Recovery state advanced to ${toState}.`,
@@ -905,49 +1362,155 @@ async function startServer() {
   });
 
   app.post("/api/reservations/assign-volunteer", authMiddleware, (req, res) => {
-    const { reservationId, volunteerId } = req.body;
-    const reservation = db.reservations.find((r) => r.id === reservationId);
+    const user = req.user;
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "NGO" && user.role !== "VOLUNTEER") {
+      return res.status(403).json({ error: "Only NGOs, Delivery Partners, or admins can assign delivery tasks." });
+    }
+
+    const { reservationId, pickupId, volunteerId } = req.body;
+    if ((!reservationId && !pickupId) || !volunteerId) {
+      return res.status(400).json({ error: "Reservation ID (or Pickup ID) and Delivery Partner ID are required." });
+    }
+
+    let reservation = null;
+    let pickup = null;
+    if (reservationId) {
+      reservation = db.reservations.find((r) => r.id === reservationId);
+      pickup = db.pickups.find((p) => p.reservationId === reservationId);
+    }
+    if (!reservation && pickupId) {
+      pickup = db.pickups.find((p) => p.id === pickupId);
+      if (pickup) {
+        reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+      }
+    }
+    if (!reservation) {
+      pickup = db.pickups.find((p) => p.id === reservationId);
+      if (pickup) {
+        reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+      }
+    }
+
     if (!reservation) {
       return res.status(404).json({ error: "Reservation not found." });
     }
-    const volunteer = db.users.find((u) => u.id === volunteerId && u.role === "VOLUNTEER");
-    if (!volunteer) {
-      return res.status(404).json({ error: "Volunteer not found." });
+
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isReceiverNgo = user.role === "NGO" && reservation.ngoId === user.id;
+    const isSelfClaim = user.role === "VOLUNTEER" && user.id === volunteerId;
+
+    if (!isAdmin && !isReceiverNgo && !isSelfClaim) {
+      return res.status(403).json({ error: "You are not authorized to assign delivery partners to this reservation." });
     }
+
+    if (reservation.status === "COMPLETED" || reservation.status === "CANCELLED") {
+      return res.status(400).json({ error: `Cannot assign delivery partner to an order that is already ${reservation.status.toLowerCase()}.` });
+    }
+
+    if (reservation.assignedVolunteerId && reservation.assignedVolunteerId !== volunteerId && isSelfClaim) {
+      return res.status(409).json({ error: "This task has already been assigned to another Delivery Partner." });
+    }
+
+    const volunteer = db.users.find((u) => u.id === volunteerId && u.role === "VOLUNTEER");
+    if (!volunteer || !volunteer.isActive || volunteer.accountState === "SUSPENDED") {
+      return res.status(404).json({ error: "Valid, active Delivery Partner not found." });
+    }
+
     const nowIso = new Date().toISOString();
     reservation.assignedVolunteerId = volunteer.id;
     reservation.assignedVolunteerName = volunteer.fullName;
-    reservation.status = "ASSIGNED";
+    reservation.assignedVolunteerPhone = volunteer.phone;
+    reservation.status = "VOLUNTEER_ASSIGNED";
     if (!reservation.timeline) reservation.timeline = [];
     reservation.timeline.push({
       step: "ASSIGNED",
-      label: `Courier ${volunteer.fullName} assigned for surplus transport.`,
+      label: `Delivery Partner ${volunteer.fullName} assigned for surplus transport.`,
       timestamp: nowIso,
       actorName: req.user.fullName,
       actorRole: req.user.role
     });
     reservation.updatedAt = nowIso;
-    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
+
     if (pickup) {
       pickup.volunteerId = volunteer.id;
       pickup.status = "ASSIGNED";
-      pickup.pickupNotes = `Assigned to courier ${volunteer.fullName}.`;
+      pickup.pickupNotes = `Assigned to Delivery Partner ${volunteer.fullName}.`;
       pickup.updatedAt = nowIso;
     }
+
+    const listing = db.foodListings.find(l => l.id === reservation.listingId);
+    db.notifications.unshift({
+      id: `notif-${Date.now()}-vol`,
+      userId: volunteer.id,
+      title: "New Dispatch Task Assigned",
+      message: `You have been assigned to pick up surplus at ${listing?.donorLocality || "Surat"}. Check your Delivery Partner dashboard.`,
+      type: "ASSIGNMENT",
+      isRead: false,
+      createdAt: nowIso
+    });
+
+    if (reservation.ngoId) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-ngo-assign`,
+        userId: reservation.ngoId,
+        title: "Delivery Partner Dispatched",
+        message: `Delivery Partner ${volunteer.fullName} has been assigned to transport your claimed surplus from ${listing?.donorName || "donor"}.`,
+        type: "ASSIGNMENT",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+
+    db.saveToDisk();
+
     res.json({
       success: true,
-      message: `Volunteer ${volunteer.fullName} assigned to reservation.`,
+      message: `Delivery Partner ${volunteer.fullName} assigned to reservation.`,
       reservation,
       pickup
     });
   });
 
   app.post("/api/verification/verify-otp", authMiddleware, (req, res) => {
-    const { reservationId, enteredOtp } = req.body;
-    if (!reservationId || !enteredOtp) {
-      return res.status(400).json({ error: "Reservation ID and OTP code are required." });
+    const { reservationId, pickupId, enteredOtp } = req.body;
+    if ((!reservationId && !pickupId) || !enteredOtp) {
+      return res.status(400).json({ error: "Reservation ID (or Pickup ID) and OTP code are required." });
     }
-    const attempts = db.otpAttempts.get(reservationId) || 0;
+
+    let reservation = db.reservations.find((r) => r.id === reservationId);
+    let pickup = db.pickups.find((p) => p.reservationId === reservationId || p.id === pickupId);
+    if (!reservation && pickup) {
+      reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+    }
+    if (!reservation && !pickup) {
+      pickup = db.pickups.find((p) => p.id === reservationId);
+      if (pickup) {
+        reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+      }
+    }
+
+    if (!reservation || !pickup) {
+      return res.status(404).json({ error: "Active recovery record not found." });
+    }
+
+    const listing = db.foodListings.find((l) => l.id === reservation.listingId);
+
+    const user = req.user;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isDonor = user.id === listing?.donorId || (user.role === "DONOR" && listing?.donorId === user.id);
+    const isNgo = user.id === reservation.ngoId || (user.role === "NGO" && reservation.ngoId === user.id);
+    const isAssignedVol = user.id === reservation.assignedVolunteerId || user.id === pickup.volunteerId;
+
+    if (!isAdmin && !isDonor && !isNgo && !isAssignedVol) {
+      return res.status(403).json({ error: "You are not authorized to verify handoff for this order." });
+    }
+
+    if (reservation.status === "COMPLETED" || pickup.status === "COMPLETED") {
+      return res.status(400).json({ error: "This handoff has already been completed." });
+    }
+
+    const rateKey = reservation.id;
+    const attempts = db.otpAttempts.get(rateKey) || 0;
     if (attempts >= 5) {
       return res.status(429).json({
         success: false,
@@ -956,15 +1519,11 @@ async function startServer() {
         attemptsRemaining: 0
       });
     }
-    const reservation = db.reservations.find((r) => r.id === reservationId);
-    const pickup = db.pickups.find((p) => p.reservationId === reservationId);
-    if (!reservation || !pickup) {
-      return res.status(404).json({ error: "Active recovery record not found." });
-    }
+
     const expectedOtp = pickup.otpCode || reservation.confirmationCode;
     if (enteredOtp.trim() !== expectedOtp?.trim()) {
       const newAttempts = attempts + 1;
-      db.otpAttempts.set(reservationId, newAttempts);
+      db.otpAttempts.set(rateKey, newAttempts);
       return res.status(400).json({
         success: false,
         errorCode: "INVALID_CODE",
@@ -972,13 +1531,15 @@ async function startServer() {
         attemptsRemaining: Math.max(0, 5 - newAttempts)
       });
     }
-    db.otpAttempts.delete(reservationId);
+
+    db.otpAttempts.delete(rateKey);
     const nowIso = new Date().toISOString();
     pickup.status = "COMPLETED";
     pickup.verifiedAt = nowIso;
     pickup.verifiedBy = req.user.id;
     pickup.verifiedByName = req.user.fullName;
     pickup.verificationMethod = "OTP";
+
     reservation.status = "COMPLETED";
     reservation.completedAt = nowIso;
     if (!reservation.timeline) reservation.timeline = [];
@@ -990,6 +1551,52 @@ async function startServer() {
       actorRole: req.user.role
     });
     reservation.updatedAt = nowIso;
+
+    if (listing && (listing.remainingQuantity || 0) <= 0) {
+      const allDone = db.reservations.filter((r) => r.listingId === listing.id).every((r) => r.status === "COMPLETED");
+      if (allDone) {
+        listing.status = "COMPLETED";
+        listing.updatedAt = nowIso;
+      }
+    }
+
+    // Complete notification dispatches to all stakeholders
+    if (listing) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-donor-done`,
+        userId: listing.donorId,
+        title: "Food Recovery Completed",
+        message: `Your food surplus "${listing.title}" was safely delivered to ${reservation.ngoName || "shelter"} via verified OTP.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+    if (reservation.ngoId) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-ngo-done`,
+        userId: reservation.ngoId,
+        title: "Food Surplus Received",
+        message: `Handover verified successfully. Food from ${listing?.donorName || "donor"} has been added to your kitchen inventory.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+    if (pickup.volunteerId) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-vol-done`,
+        userId: pickup.volunteerId,
+        title: "Delivery Mission Completed",
+        message: `Handover verified successfully for ${reservation.ngoName || "shelter"}. Mission logged to your impact record.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+
+    db.saveToDisk();
+
     res.json({
       success: true,
       message: "OTP verified successfully. Food recovery completed.",
@@ -1007,13 +1614,28 @@ async function startServer() {
     if (!pickup) {
       return res.status(404).json({ error: "Pickup task not found." });
     }
-    if (db.usedNonces.has(qrToken)) {
+
+    const reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+    const listing = db.foodListings.find((l) => l.id === pickup.listingId);
+
+    const user = req.user;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isDonor = user.id === pickup.donorId || (user.role === "DONOR" && listing?.donorId === user.id);
+    const isNgo = user.id === pickup.ngoId || (user.role === "NGO" && reservation?.ngoId === user.id);
+    const isAssignedVol = user.id === pickup.volunteerId || user.id === reservation?.assignedVolunteerId;
+
+    if (!isAdmin && !isDonor && !isNgo && !isAssignedVol) {
+      return res.status(403).json({ error: "You are not authorized to verify this QR handoff." });
+    }
+
+    if (db.usedNonces.has(qrToken.trim())) {
       return res.status(400).json({
         success: false,
         errorCode: "NONCE_REPLAYED",
         error: "This single-use cryptographic QR token has already been consumed."
       });
     }
+
     if (pickup.qrToken !== qrToken.trim()) {
       return res.status(400).json({
         success: false,
@@ -1021,6 +1643,7 @@ async function startServer() {
         error: "Cryptographic signature mismatch on QR token."
       });
     }
+
     db.usedNonces.add(qrToken.trim());
     const nowIso = new Date().toISOString();
     pickup.status = "COMPLETED";
@@ -1028,7 +1651,7 @@ async function startServer() {
     pickup.verifiedBy = req.user.id;
     pickup.verifiedByName = req.user.fullName;
     pickup.verificationMethod = "QR_HMAC";
-    const reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+
     if (reservation) {
       reservation.status = "COMPLETED";
       reservation.completedAt = nowIso;
@@ -1042,6 +1665,52 @@ async function startServer() {
       });
       reservation.updatedAt = nowIso;
     }
+
+    if (listing && (listing.remainingQuantity || 0) <= 0) {
+      const allDone = db.reservations.filter((r) => r.listingId === listing.id).every((r) => r.status === "COMPLETED");
+      if (allDone) {
+        listing.status = "COMPLETED";
+        listing.updatedAt = nowIso;
+      }
+    }
+
+    // Complete notification dispatches to all stakeholders
+    if (listing) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-donor-done`,
+        userId: listing.donorId,
+        title: "Food Recovery Completed",
+        message: `Your food surplus "${listing.title}" was safely delivered to ${reservation.ngoName || "shelter"} via verified OTP.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+    if (reservation.ngoId) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-ngo-done`,
+        userId: reservation.ngoId,
+        title: "Food Surplus Received",
+        message: `Handover verified successfully. Food from ${listing?.donorName || "donor"} has been added to your kitchen inventory.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+    if (pickup.volunteerId) {
+      db.notifications.unshift({
+        id: `notif-${Date.now()}-vol-done`,
+        userId: pickup.volunteerId,
+        title: "Delivery Mission Completed",
+        message: `Handover verified successfully for ${reservation.ngoName || "shelter"}. Mission logged to your impact record.`,
+        type: "VERIFICATION",
+        isRead: false,
+        createdAt: nowIso
+      });
+    }
+
+    db.saveToDisk();
+
     res.json({
       success: true,
       message: "HMAC QR token verified successfully. Single-use nonce consumed.",
@@ -1052,11 +1721,27 @@ async function startServer() {
 
   app.post("/api/verification/fallback-confirm", authMiddleware, (req, res) => {
     const { reservationId, pickupId, reason } = req.body;
-    const reservation = db.reservations.find((r) => r.id === reservationId);
-    const pickup = db.pickups.find((p) => p.id === pickupId || p.reservationId === reservationId);
+    let reservation = db.reservations.find((r) => r.id === reservationId);
+    let pickup = db.pickups.find((p) => p.id === pickupId || p.reservationId === reservationId);
+    if (!reservation && pickup) {
+      reservation = db.reservations.find((r) => r.id === pickup.reservationId);
+    }
     if (!reservation || !pickup) {
       return res.status(404).json({ error: "Recovery task record not found." });
     }
+
+    const listing = db.foodListings.find((l) => l.id === reservation.listingId);
+
+    const user = req.user;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isDonor = user.id === listing?.donorId;
+    const isNgo = user.id === reservation.ngoId;
+    const isAssignedVol = user.id === pickup.volunteerId || user.id === reservation.assignedVolunteerId;
+
+    if (!isAdmin && !isDonor && !isNgo && !isAssignedVol) {
+      return res.status(403).json({ error: "You are not authorized to confirm fallback for this task." });
+    }
+
     const nowIso = new Date().toISOString();
     pickup.status = "COMPLETED";
     pickup.verifiedAt = nowIso;
@@ -1075,16 +1760,28 @@ async function startServer() {
       actorRole: req.user.role
     });
     reservation.updatedAt = nowIso;
+
+    if (listing && (listing.remainingQuantity || 0) <= 0) {
+      const allDone = db.reservations.filter((r) => r.listingId === listing.id).every((r) => r.status === "COMPLETED");
+      if (allDone) {
+        listing.status = "COMPLETED";
+        listing.updatedAt = nowIso;
+      }
+    }
+
     db.moderationLogs.unshift({
       id: `log-${Date.now()}`,
       action: "OPERATIONAL_FALLBACK_VERIFIED",
       targetId: reservation.id,
-      targetName: reservation.listingTitle,
+      targetName: listing?.title || reservation.id,
       adminId: req.user.id,
       adminName: req.user.fullName,
       reason: pickup.fallbackReason,
       timestamp: nowIso
     });
+
+    db.saveToDisk();
+
     res.json({
       success: true,
       message: "Operational fallback verified and audited.",
@@ -1115,6 +1812,7 @@ async function startServer() {
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db.joinApplications.unshift(newApp);
+    db.saveToDisk();
     res.json({ success: true, applicationId: newApp.id });
   });
   app.post("/api/applications/review", authMiddleware, (req, res) => {
@@ -1160,6 +1858,7 @@ async function startServer() {
         reason: adminNotes || "Approved organization verification",
         timestamp: nowIso
       });
+      db.saveToDisk();
       return res.json({
         success: true,
         message: "Application approved. Secure account setup link generated.",
@@ -1179,8 +1878,30 @@ async function startServer() {
         reason: rejectionReason,
         timestamp: nowIso
       });
+      db.saveToDisk();
       return res.json({ success: true, message: "Application rejected." });
     }
+  });
+
+  app.get("/api/applications/export", authMiddleware, (req, res) => {
+    if (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Administrative authority required." });
+    }
+    const headers = ["ID", "Role", "Name", "Email", "Phone", "Locality", "Status", "CreatedAt"];
+    const rows = db.joinApplications.map((a) => [
+      a.id,
+      a.role,
+      `"${a.applicantName}"`,
+      a.email,
+      a.phone,
+      `"${a.locality || ""}"`,
+      a.status,
+      a.createdAt
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="nourishnet_applications.csv"');
+    res.send(csvContent);
   });
   app.post("/api/admin/invite", authMiddleware, (req, res) => {
     const user = req.user;
@@ -1212,6 +1933,7 @@ async function startServer() {
       reason: "Issued administrative credentials invite",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
+    db.saveToDisk();
     res.json({ success: true, message: "Admin invitation created.", setupToken });
   });
 
@@ -1240,6 +1962,7 @@ async function startServer() {
       reason: reason || "Credentials revoked by Governance Council",
       timestamp: nowIso
     });
+    db.saveToDisk();
     res.json({
       success: true,
       message: `Administrative credentials for ${target.fullName} revoked.`,
@@ -1247,22 +1970,58 @@ async function startServer() {
     });
   });
 
+  app.post("/api/notifications/mark-read", authMiddleware, (req, res) => {
+    const { notificationId } = req.body;
+    const notif = db.notifications.find((n) => n.id === notificationId && n.userId === req.user.id);
+    if (notif) {
+      notif.isRead = true;
+      db.saveToDisk();
+    }
+    res.json({ success: true });
+  });
+
+  app.post("/api/notifications/mark-all-read", authMiddleware, (req, res) => {
+    db.notifications.forEach((n) => {
+      if (n.userId === req.user.id) {
+        n.isRead = true;
+      }
+    });
+    db.saveToDisk();
+    res.json({ success: true });
+  });
+
   app.post("/api/messages/send", authMiddleware, (req, res) => {
     const user = req.user;
     const { reservationId, text } = req.body;
-    if (!reservationId || !text) {
+    if (!reservationId || !text || !text.trim()) {
       return res.status(400).json({ error: "Reservation ID and message text are required." });
     }
+    const reservation = db.reservations.find(r => r.id === reservationId);
+    if (!reservation) {
+      return res.status(404).json({ error: "Reservation record not found." });
+    }
+    const pickup = db.pickups.find(p => p.reservationId === reservationId);
+    const listing = db.foodListings.find(l => l.id === reservation.listingId);
+
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    const isDonor = user.id === listing?.donorId;
+    const isNgo = user.id === reservation.ngoId;
+    const isVol = user.id === reservation.assignedVolunteerId || user.id === pickup?.volunteerId;
+    if (!isAdmin && !isDonor && !isNgo && !isVol) {
+      return res.status(403).json({ error: "You are not authorized to send messages on this recovery order." });
+    }
+
     const newMsg = {
       id: `msg-${Date.now()}`,
       reservationId,
       senderId: user.id,
       senderName: user.fullName,
       senderRole: user.role,
-      text,
+      text: text.trim(),
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     };
     db.recoveryMessages.push(newMsg);
+    db.saveToDisk();
     res.json({ success: true, message: newMsg });
   });
   if (process.env.NODE_ENV !== "production") {

@@ -54,11 +54,11 @@ export const DemoDrawer = ({ isOpen, onClose, onSelectCredentials }) => {
       description: 'Community kitchens, shelters reserving meals'
     },
     VOLUNTEER: {
-      label: 'Couriers',
+      label: 'Delivery Partners',
       icon: Truck,
       color: 'text-[#8D6E63]',
       bg: 'bg-[#8D6E63]/10',
-      description: 'Field volunteers handling transit & verification'
+      description: 'Field delivery partners handling transit & verification'
     },
     ADMIN: {
       label: 'City Admins',

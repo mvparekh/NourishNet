@@ -288,23 +288,23 @@ const ActiveRecoveryView = ({ reservationId, onBack }) => {
           </div>
         </div>
 
-        {/* Assigned Courier Card */}
+        {/* Assigned Delivery Partner Card */}
         <div className="card-warm p-5 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-[#8D6E63] uppercase tracking-wider">
             <PackageCheck className="w-4 h-4 text-[#795548]" />
-            <span>Assigned Courier</span>
+            <span>Assigned Delivery Partner</span>
           </div>
           <div>
             <h4 className="font-bold text-[#2C1810]">
-              {reservation.assignedVolunteerName || "Courier Dispatch Pending"}
+              {reservation.assignedVolunteerName || "Delivery Partner Dispatch Pending"}
             </h4>
             <p className="text-xs text-[#5D4037] mt-1">
-              {reservation.assignedVolunteerName ? "Verified Relief Courier" : "Automatic matching in progress"}
+              {reservation.assignedVolunteerName ? "Verified Delivery Partner" : "Automatic matching in progress"}
             </p>
           </div>
           <div className="pt-2 border-t border-[#E7DCD5] text-xs text-[#5D4037] flex justify-between">
             <span>Verification:</span>
-            <strong className="text-[#2C1810]">Single-Use OTP / QR</strong>
+            <strong className="text-[#2C1810]">Single 4-Digit Handover OTP</strong>
           </div>
         </div>
       </div>

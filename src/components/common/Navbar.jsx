@@ -55,7 +55,7 @@ const Navbar = ({
       case "NGO":
         return "NGO Partner";
       case "VOLUNTEER":
-        return "Relief Courier";
+        return "Delivery Partner";
       case "ADMIN":
         return "City Admin";
       case "SUPER_ADMIN":
